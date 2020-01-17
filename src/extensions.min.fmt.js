@@ -842,7 +842,7 @@ var inclusionsBegin, inclusionsEnd;
                 function collapse_line_ends(line, ix, ar) {
                     if (ix < ar.length - 1) {
                         var next_line = ar[ix + 1];
-                        (line.endsWith("=") || line.endsWith("{") || next_line.startsWith("}") || line.endsWith(";") && !next_line.startsWith("function ") && !next_line.startsWith("var ")) && (line += next_line, 
+                        (line.endsWith("=") || line.endsWith("{") || next_line.startsWith("}")) && (line += next_line, 
                         ar[ix + 1] = "", fix_needed = !0);
                     }
                     return line;

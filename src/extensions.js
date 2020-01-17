@@ -2279,12 +2279,12 @@ var inclusionsBegin;
                          if (      line.endsWith("=")
                                 || line.endsWith("{")
                                 || next_line.startsWith("}")
-                                || (
+                            /*    || (
                                       line.endsWith(";")
                                       && !( next_line.startsWith("function ")
                                             || next_line.startsWith("var ")
                                       )
-                                  )
+                                  )*/
 
 
 
@@ -2374,7 +2374,6 @@ var inclusionsBegin;
         string.prototype("ArraySplitCode",function ArraySplitCode(needle,limit,map,wc){
             return ArraySplitViaWhitespaceComments(this,needle,limit,map,wc);
         });
-
 
         string("RegExpSplit",RegExp.split);
         wrapStringMethod("RegExpSplit");
