@@ -1,0 +1,23 @@
+{
+  "author": {
+    "name": "Jonathan Annett",
+    "url": "http://github.com/jonathan-annett",
+    "email": "jonathan.max.annett@gmail.com"
+  },
+  "contributors": [],
+  "description": "javascript extensions and polyfills used by various projects",
+  "license": "MIT",
+  "dependencies": {
+  },
+  "devDependencies": {},
+  "scripts": {},
+  "keywords": [
+  ],
+  "main": "src/extensions.js",
+  "name": "jsextensions",
+  "repository": {
+    "url": "https://github.com/jonathan-annett/jsextensions",
+    "type": "git"
+  },
+  "version": "0.0.1"
+}
