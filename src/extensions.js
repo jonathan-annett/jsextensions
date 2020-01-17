@@ -2472,10 +2472,10 @@ var inclusionsBegin;
         });
 
         string.prototype("load",function indent(filename){
-            return fs.readFileSync(filename,"utf8");
+            return require("fs").readFileSync(filename,"utf8");
         });
         string("load",function indent(filename){
-            return fs.readFileSync(filename,"utf8");
+            return require("fs").readFileSync(filename,"utf8");
         });
 
 
