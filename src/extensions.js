@@ -2327,15 +2327,15 @@ var inclusionsBegin;
             }).join("\n");
 
         }
-        function ArraySplitViaWhitespaceComments(code,needle,limit,map) {
+        function ArraySplitViaWhitespaceComments(code,needle,limit,map,wc) {
             // the idea is to be able to ignore any commented out tokens in the split
             // but still return those comments verbatim in the between-the-valid-splits text output
 
             // step 1:replace any embedded comments with char 255
             // (we don't use actual whitespace as that might what they are splitting on)
+            wc=wc||String.fromCharCode(255);
             var
-            c255=String.fromCharCode(255),
-            stripped = whiteOutComments(code,c255,c255);
+            stripped = whiteOutComments(code,wc,wc);
             // step 2: split the whitespaced code using the needle,limit criteria
             var split = stripped.ArraySplit(needle,limit);
             // if no splits were found, return null as per usual
@@ -2371,8 +2371,8 @@ var inclusionsBegin;
             return whiteOutComments(this,"number");
         });
 
-        string.prototype("ArraySplitCode",function ArraySplitCode(needle,limit,map){
-            return ArraySplitViaWhitespaceComments(this,needle,limit,map);
+        string.prototype("ArraySplitCode",function ArraySplitCode(needle,limit,map,wc){
+            return ArraySplitViaWhitespaceComments(this,needle,limit,map,wc);
         });
 
 

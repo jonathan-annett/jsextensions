@@ -858,8 +858,9 @@ var inclusionsBegin, inclusionsEnd;
                 return isMulti[ix] ? " *" + num_prefix + (1 + ix).toString().padStart(pad) + " *  " + line : "/*" + num_prefix + (1 + ix).toString().padStart(pad) + " */ " + line;
             }).join("\n");
         }
-        function ArraySplitViaWhitespaceComments(code, needle, limit, map) {
-            var c255 = String.fromCharCode(255), split = whiteOutComments(code, c255, c255).ArraySplit(needle, limit);
+        function ArraySplitViaWhitespaceComments(code, needle, limit, map, wc) {
+            wc = wc || String.fromCharCode(255);
+            var split = whiteOutComments(code, wc, wc).ArraySplit(needle, limit);
             if (!split) return split;
             function falseToNull(x, ix) {
                 return !1 === x || limit && limit - 1 <= ix ? null : x;
@@ -1206,8 +1207,8 @@ var inclusionsBegin, inclusionsEnd;
             return whiteOutComments(this);
         }), string.prototype("@codeNumbered", function() {
             return whiteOutComments(this, "number");
-        }), string.prototype("ArraySplitCode", function(needle, limit, map) {
-            return ArraySplitViaWhitespaceComments(this, needle, limit, map);
+        }), string.prototype("ArraySplitCode", function(needle, limit, map, wc) {
+            return ArraySplitViaWhitespaceComments(this, needle, limit, map, wc);
         }), string("RegExpSplit", RegExp.split), wrapStringMethod("RegExpSplit"), string("mapSplit", function(haystack, needle, limit, map) {
             if (isEmpty(needle)) return null;
             var handler;
@@ -1273,9 +1274,9 @@ var inclusionsBegin, inclusionsEnd;
                 return filler + line.substr(current);
             }).join(nl);
         }), string.prototype("load", function(filename) {
-            return fs.readFileSync(filename, "utf8");
+            return require("fs").readFileSync(filename, "utf8");
         }), string("load", function(filename) {
-            return fs.readFileSync(filename, "utf8");
+            return require("fs").readFileSync(filename, "utf8");
         }), string("extensionsTest", function(verbose) {
             getSafeJson(testMappedSampleData()), getSafeJson(testMappedSampleData(!0));
             var array_call0, array_call1, array_call2, array_call3, ArrayMapSample = (array_call0 = reparse({
