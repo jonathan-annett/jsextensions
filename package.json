@@ -1,23 +1,23 @@
 {
-  "author": {
-    "name": "Jonathan Annett",
-    "url": "http://github.com/jonathan-annett",
-    "email": "jonathan.max.annett@gmail.com"
-  },
-  "contributors": [],
-  "description": "javascript extensions and polyfills used by various projects",
-  "license": "MIT",
-  "dependencies": {
-    "jspolyfills": "github:jonathan-annett/jspolyfills#ec4f441ba8b694f208f1d23277919d26a4ad41e8"
-  },
-  "devDependencies": {},
-  "scripts": {},
-  "keywords": [],
-  "main": "src/extensions.js",
-  "name": "jsextensions",
-  "repository": {
-    "url": "https://github.com/jonathan-annett/jsextensions",
-    "type": "git"
-  },
-  "version": "0.0.1"
+    "author": {
+        "name": "Jonathan Annett",
+        "url": "http://github.com/jonathan-annett",
+        "email": "jonathan.max.annett@gmail.com"
+    },
+    "contributors": [],
+    "description": "javascript extensions and polyfills used by various projects",
+    "license": "MIT",
+    "dependencies": {
+        "jspolyfills": "github:jonathan-annett/jspolyfills#5c8202ec193922269e2e212bed75ad609afd28c0"
+    },
+    "devDependencies": {},
+    "scripts": {},
+    "keywords": [],
+    "main": "src/extensions.js",
+    "name": "jsextensions",
+    "repository": {
+        "url": "https://github.com/jonathan-annett/jsextensions",
+        "type": "git"
+    },
+    "version": "0.0.1"
 }
