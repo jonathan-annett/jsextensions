@@ -3585,7 +3585,7 @@ var inclusionsBegin;
 
 
 },
-    (!!Object.env && Object.env.isNode)||(!!Object.polyfills || (typeof process==='object' && typeof module==='object' && typeof require==='function' && !!require("./polyfills.js")))
+    (!!Object.env && Object.env.isNode)||(!!Object.polyfills || (typeof process==='object' && typeof module==='object' && typeof require==='function' && !!require("jspolyfills")))
 
 );
 
