@@ -8,11 +8,11 @@
   "description": "javascript extensions and polyfills used by various projects",
   "license": "MIT",
   "dependencies": {
+    "jspolyfills": "github:jonathan-annett/jspolyfills#ec4f441ba8b694f208f1d23277919d26a4ad41e8"
   },
   "devDependencies": {},
   "scripts": {},
-  "keywords": [
-  ],
+  "keywords": [],
   "main": "src/extensions.js",
   "name": "jsextensions",
   "repository": {
