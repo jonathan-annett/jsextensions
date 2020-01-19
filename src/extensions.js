@@ -8,6 +8,7 @@
 /* global Proxy,performance */
 
 var inclusionsBegin;
+
 (function(extensions,isNode){
 
     loadExtensions("boot");
@@ -3586,8 +3587,6 @@ var inclusionsBegin;
 
 },
     (!!Object.env && Object.env.isNode)||(!!Object.polyfills || (typeof process==='object' && typeof module==='object' && typeof require==='function' && !!require("jspolyfills")))
-
 );
-
 
 var inclusionsEnd;
