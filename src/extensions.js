@@ -1433,10 +1433,113 @@ var inclusionsBegin;
         function camelCaseWords(s){return camelCaseArray(s.split(" "));}
 
 
-
-
-        string("toCamelCase",function toCamelCase() {
+        string.prototype("toCamelCase",function toCamelCase() {
             return camelCaseWords(this);
+        });
+
+
+        string("htmlGenerator",function htmlGenerator(template) {
+                  /*
+
+                  htmlGenerator() is a SINGLE use wrapper around a string, used to manipulate existing html code
+                  to reflect subtle changes.  it is intended for lightweight use, not for composing large complex pages
+
+                  'template' is a string which by itself is at the very least one valid <html></html> paring.
+                  ideally it is a fully formed html page with head & body populated
+
+                  returns an object with
+                     html - a string containing the original template which has been modified by calls to:
+
+                       append (something,where)
+                      - or -
+                       replace(something,withSomething)
+
+                       append()
+
+                         'something' describes what is to be appended to an area described by 'where'
+                           - a string containing valid html to be appended
+                           - a javascript function(){} object , which is converted to a string
+                              - the header and opening/closing braces are removed) and it is wrapped in script tags
+                          - a string starting with '/' and ending with ".js", which refers to a script to be added to the head or body (as set by 'where')
+                          - a string starting with '/' and ending with '.css', which refers to a css file to be appended to the head as a link
+
+                         'where' is a string and can be one of
+                            "body" (the default value if 'where' is left undefined)
+                            "head"
+                            (any valid htlm tag)
+                            the first endcounteed "</where>" tag is used as the insertion point
+                            eg if 'where' is "body" the html will be appended to the end of the body
+                               ie inserted just before "</body>"
+                            eg if 'where' is 'title' and there is an empty title tag in the head section
+                               the title would be set there.
+
+                      replace
+                          - something can be a string or a RegExp eg 'src="/mypath"' or /<title.*<\\title>/
+                          - withSomething must be a valid html string. (NOT a function or filename like append)
+
+
+                  */
+                  var html = isString(template)&&template.length>0 ? ""+template : "<!doctype html><html><head><title></title><style></style></head><body></body></html>";
+                  var self = {};
+
+                  function append (h,where){
+                      where = "</"+(where || "body")+">";
+
+                      switch (true) {
+
+                          case typeof h==='function' :
+                              h = h.toString();
+                              h = "<script>"+h.substring(h.search(/{/)+1,h.length-1)+"</script>";
+                              break;
+
+                          case (h.search(/^(\/[a-z]|[A-Z]|[0-9])*.*\.js/) ===0)
+                            && (h.search(/\s/)===-1) :
+
+                               h = '<script src="'+h+'"></script>';
+                               break;
+
+                          case (h.search(/^(\/[a-z]|[A-Z]|[0-9])*.*\.css/) ===0)
+                            && (h.search(/\s/)===-1) :
+
+                            where = 'head';// force css to be in head.
+                            h = '<link href="'+h+'" rel="stylesheet"\\>';
+                              html
+                          break;
+                      }
+
+
+                      html = html.replace(where,h+"\n"+where);
+                      return self;
+                  }
+
+                  function replace (a,b) {
+                          html = html.replace(a,b);
+                          return self;
+                  }
+
+
+                  var handler = function (req,res) {res.send(html);};
+                  return Object.defineProperties(self,{
+                      html: {
+                          get : function (){ return html;},
+                          set : function (h) { html = h; },
+                          enumerable:true,configurable:true
+                      },
+                      append: {
+                          value      : append,
+                          enumerable : true,
+                          configurable:true
+                      },
+                      replace : {
+                          value : replace,
+                          enumerable:true,
+                          configurable:true
+                      }
+
+                  });
+              });
+        string.prototype("htmlGenerator",function() {
+            return String.htmlGenerator(this);
         });
 
         string("customNeedleString",function customNeedleString(s,name,props){
