@@ -2397,17 +2397,32 @@ var inclusionsBegin;
 
 
             function render(temp,obj,ix) {
+                function getAllProperties(obj){
+                    var allProps = [], curr = obj,
+                    fetch = function(prop){
+                        if (allProps.indexOf(prop) <0)
+                            allProps.push(prop)
+                    };
+
+                    do{
+                        Object.getOwnPropertyNames(curr).forEach(fetch);
+                    }while((curr = Object.getPrototypeOf(curr)));
+
+                    return allProps
+                }
                 function zap(prefix,obj) {
-                    Object.keys(obj).forEach(function(key){
+                    getAllProperties(obj).forEach(function(key){
                         var
                         re = new RegExp('\\$\\{'+escapeRegExp(prefix)+key+'\\}','g'),
                         val=obj[key];
                         if (typeof val === 'object') {
-                            zap(key+".",val);
+                            if (val!==null) zap(prefix+key+".",val);
                         } else {
-                         temp
+
                             if (typeof val === 'function') {
-                                temp=temp.replace(re,val(temp,ix,template));
+                                if (temp.search(re)>=0) {
+                                    temp=temp.replace(re,val.apply(obj,[temp,ix,template]));
+                                }
                             } else {
                                 if (temp.search(re)>=0) {
                                     temp=temp.replace(re,val);
