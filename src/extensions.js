@@ -2362,7 +2362,7 @@ var inclusionsBegin;
               var handler = function (req,res) {res.send(html);};
               return Object.defineProperties(self,{
                   html: {
-                      get : function (){ return html.replace(/<\/script>\s*<script>/g,'');},
+                      get : function (){ return html.replace(/(?<!<script.*src.*>)<\/script>\s*<script>/g,'');},
                       set : function (h) { html = h; },
                       enumerable:true,configurable:true
                   },
