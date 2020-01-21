@@ -84,10 +84,18 @@ var inclusionsBegin;
             indents = indents===null?undefined:4;
 
             return var_+keys.map(function(key){
-                var fixed = resolve_unquoted(JSON.stringify_dates(obj[key],replacer,indents));
-                fns.forEach(function(fn,ix){
-                    var re= new RegExp( "\"\\{\\$!func<"+ix+">tion!\\$\\}\"", 's' );
-                    fixed=fixed.replace(re,fn);
+                var fixed =
+
+                    resolve_unquoted(JSON.stringify_dates(obj[key],replacer,indents))
+                    .replace(/</g,"\\u003c")
+                        .replace(/>/g,"\\u003e");
+
+            fns.forEach(function(fn,ix){
+                    var re= new RegExp( "\"\\{\\$!func\\["+ix+"\\]tion!\\$\\}\"", 's' );
+                    fixed=fixed
+                        .replace(re,fn)
+                            .replace(/(?<=function anonymous\(.*)(\n)(?=\))/sg,'')
+                                .replace(/(function anonymous\()/sg,'function (');
                 });
                 return key+
                        equals+
@@ -100,7 +108,7 @@ var inclusionsBegin;
                 if (typeof v ==='function') {
                     var ix = fns.length;
                     fns.push(v.toString());
-                    return '{$!func<'+ix+'>tion!$}';
+                    return '{$!func['+ix+']tion!$}';
                 }
 
                 if (typeof v==='object'&& v.constructor===Date) {
@@ -133,9 +141,10 @@ var inclusionsBegin;
 
             selfVars.forEach(function(key){
                 self[key]=obj[key];
+                var FN = Function;
                 proto[key]={
-                    get: new Function('','return '+key+';'),
-                    set: new Function('val',key+'=val;'),
+                    get: new FN('    return '+key+';'),
+                    set: new FN('val','   '+key+'=val;'),
                     enumerable:true,
                     configurable:true
                 };
@@ -156,7 +165,7 @@ var inclusionsBegin;
 
                    (
                    Object.varify(self,'{},',undefined,undefined,'')+
-                   Object.varify(proto,',\n\n/*properties*/\nproto={',':',',\n','}')
+                   Object.varify(proto,',\n\n/*properties*/\nproto={',':',',\n','}',null)
                    ).reindent(4).trim()
                );
         });
@@ -2322,7 +2331,7 @@ var inclusionsBegin;
                           break;
 
                       case typeof h==='object' :
-                          h = "<script>\n"+varify(h)+"</script>";
+                          h = "<script>\n"+h.toVars()+"</script>";
                           break;
                       case (h.search(/^(\/[a-z]|[A-Z]|[0-9])*.*\.js/) ===0)
                         && (h.search(/\s/)===-1) :
