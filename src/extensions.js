@@ -1501,9 +1501,9 @@ var inclusionsBegin;
                           case (h.search(/^(\/[a-z]|[A-Z]|[0-9])*.*\.css/) ===0)
                             && (h.search(/\s/)===-1) :
 
-                            where = 'head';// force css to be in head.
+                            where = '</head>';// force css to be in head.
                             h = '<link href="'+h+'" rel="stylesheet"\\>';
-                              html
+
                           break;
                       }
 
