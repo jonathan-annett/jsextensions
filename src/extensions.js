@@ -2400,7 +2400,7 @@ var inclusionsBegin;
                 function zap(prefix,obj) {
                     Object.keys(obj).forEach(function(key){
                         var
-                        re = new RegExp('\\$\\{'+escapeRegExp(prefix+key)+'\\}','g'),
+                        re = new RegExp('\\$\\{'+escapeRegExp(prefix)+key+'\\}','g'),
                         val=obj[key];
                         if (typeof val === 'object') {
                             zap(key+".",val);
@@ -2409,7 +2409,7 @@ var inclusionsBegin;
                             if (typeof val === 'function') {
                                 temp=temp.replace(re,val(temp,ix,template));
                             } else {
-                                if (temp.search(re)) {
+                                if (temp.search(re)>=0) {
                                     temp=temp.replace(re,val);
                                 }
                             }
