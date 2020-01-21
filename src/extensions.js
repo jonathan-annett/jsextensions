@@ -127,6 +127,7 @@ var inclusionsBegin;
            return Object.varify(this,var_);
         });
 
+
         object("scriptify",function scriptify(obj,name) {
             var self = {},proto={};
             var template = function scriptified() {
@@ -2160,6 +2161,10 @@ var inclusionsBegin;
             return Array.proxifyArray(this);
         });
 
+        array.prototype("renderWithTemplate",function(template) {
+            return String.stringRenderer(template,this);
+        });
+
     }
 
     function String_extensions(string){
@@ -2381,7 +2386,50 @@ var inclusionsBegin;
           });
 
         string.prototype("htmlGenerator",function() {
-            return String.htmlGenerator(this);
+              return String.htmlGenerator(this);
+         });
+
+        string("stringRenderer",function stringRenderer(template,obj) {
+
+            function escapeRegExp(text) {
+                return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+            }
+
+
+            function render(temp,obj,ix) {
+                function zap(prefix,obj) {
+                    Object.keys(obj).forEach(function(key){
+                        var
+                        re = new RegExp('\\$\\{'+escapeRegExp(prefix+key)+'\\}','g'),
+                        val=obj[key];
+                        if (typeof val === 'object') {
+                            zap(key+".",val);
+                        } else {
+                         temp
+                            if (typeof val === 'function') {
+                                temp=temp.replace(re,val(temp,ix,template));
+                            } else {
+                                if (temp.search(re)) {
+                                    temp=temp.replace(re,val);
+                                }
+                            }
+                        }
+                    });
+                }
+                zap('',obj);
+                return temp;
+            }
+
+            if (Array.isArray(obj)) {
+                return obj.map(render.bind(this,template)).join('\n');
+            } else {
+                return render(template,obj)
+            }
+        }
+       );
+
+        string.prototype("renderWithObject",function(obj) {
+            return String.stringRenderer(this,obj);
         });
 
         string("customNeedleString",function customNeedleString(s,name,props){
