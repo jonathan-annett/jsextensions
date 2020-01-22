@@ -2346,7 +2346,7 @@ var inclusionsBegin;
                               break;
 
                           case typeof h==='object' :
-                              h = "<script>\n"+h.toVars()+"</script>";
+                              h = "<script>\n"+ Object.varify(h)+"</script>";
                               break;
                           case (h.search(/^(\/[a-z]|[A-Z]|[0-9])*.*\.js/) ===0) &&
                                (h.search(/\s/)===-1) :
