@@ -18,7 +18,7 @@ module.exports = function(WS_PATH,ws_static_path,WS_PORT,cpArgs) {
         CB[0].cb===null;
     };
 
-    function nodeSockeServer(main_app,cb) {
+    function nodeWSServer(main_app,cb) {
 
         if (!nodeGetPath('express') || !nodeGetPath ('express-ws')) return false;
 
@@ -145,7 +145,7 @@ module.exports = function(WS_PATH,ws_static_path,WS_PORT,cpArgs) {
 
     return {
             nodeGetPath  : nodeGetPath,
-            nodeSockeServer : nodeSockeServer
+            nodeWSServer : nodeWSServer
     };
 
 };
