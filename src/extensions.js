@@ -4613,8 +4613,8 @@ var inclusionsBegin;
                     return nodeGetPath(name) ? cb(require(name)) : undefined;
 
                 } else {
-
-                    return window[name] ? cb(window[name])
+                    var winName = name.toCamelCase();
+                    return window[winName] ? cb(window[winName])
 
                     : browserSocketConnection().call("load",name,location.protocol, location.hostname,function(payload){
 
@@ -4622,8 +4622,8 @@ var inclusionsBegin;
                         script.onload = script.onreadystatechange = function(_, isAbort) {
                             if (isAbort || !script.readyState || script.readyState == "loaded" || script.readyState == "complete") {
                                 script = script.onload = script.onreadystatechange = null;
-                                if (window[name]) {
-                                    cb(window[name]);
+                                if (window[winName]) {
+                                    cb(window[winName]);
                                 }
                             }
                         };
