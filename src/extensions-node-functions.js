@@ -106,12 +106,21 @@ module.exports = function(WS_PATH,ws_static_path,WS_PORT,cpArgs) {
 
         app.listen(WS_PORT,cb);
 
+        statics[__filename] = ws_static_path+'jsextensions.js';
+        app.use(ws_static_path+'jsextensions.js',express.static(__filename));
+
+        load ("jspolyfills",function(mod){
+
+            console.log("jspolyfills,jsextensions loaded. available from",statics);
+
+        });
+
         return {
             app : app,
             path : WS_PATH,
             port : WS_PORT
         };
-        
+
     }
 
     return {
