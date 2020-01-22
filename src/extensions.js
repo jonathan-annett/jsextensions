@@ -47,6 +47,8 @@ var inclusionsBegin;
         extend(String,String_extensions);
         extend(Function,Function_extensions);
 
+        if (Object.env.isNode && process.argv.indexOf("--Function.startServer")) { Function.startServer(); }
+
         function isEmpty(x){
            return ([null,undefined].indexOf(x)>=0||x.length===0||x.constructor===Object&&Object.keys(x).length===0);
         }
@@ -4438,7 +4440,7 @@ var inclusionsBegin;
             nodeGetPath,
             CB_TOKEN=[{cb:null}],
             WS_PATH = "/javascript.Function.load",
-            ws_static_path = "/javascript.Function.serve/",
+            ws_static_path = "/js/",
             WS_PORT = 3029;
 
             if (Object.env.isNode) {
