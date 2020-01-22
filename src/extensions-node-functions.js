@@ -1,6 +1,6 @@
 
 
-module.exports = function(WS_PATH,ws_static_path,WS_PORT,cpArgs) {
+module.exports = function(WS_PATH,ws_static_path,WS_PORT,cpArgs,ext_path) {
 
 
     var
@@ -35,7 +35,9 @@ module.exports = function(WS_PATH,ws_static_path,WS_PORT,cpArgs) {
         var statics = {};
         var cached  = {};
 
-        function load (name,cb) {
+        function load (name,proto,hostname,cb) {
+
+            var URL_PREFIX = proto.split(":")[0]+"://"+hostname+":"+WS_PORT;
 
             if (typeof name!=='string') return;
             if (typeof cb!=='function') return;
@@ -47,7 +49,7 @@ module.exports = function(WS_PATH,ws_static_path,WS_PORT,cpArgs) {
 
             src=statics[path];
             if (src) {
-                return cb ({mode:"src",data:src});
+                return cb ({mode:"src",data:URL_PREFIX+src});
             }
             textContent=cached[path];
             if (textContent) {
@@ -61,7 +63,7 @@ module.exports = function(WS_PATH,ws_static_path,WS_PORT,cpArgs) {
 
                     src = ws_static_path + mod._script_src ? mod._script_src : (name +'.js');
                     app.use(src,node.express.static(mod._script_src_dir || mod._script_src_file));
-                    return cb ({mode:"src",data:(statics[path]=src)});
+                    return cb ({mode:"src",data:URL_PREFIX+ (statics[path]=src)});
 
                 }  else {
 
@@ -76,7 +78,7 @@ module.exports = function(WS_PATH,ws_static_path,WS_PORT,cpArgs) {
             app.use(src,node.express.static(path));
             app.use(ws_static_path+name+'/',node.express.static(node.path.dirname(path)));
 
-            return cb ({mode:"src",data:(statics[path]=src)});
+            return cb ({mode:"src",data: URL_PREFIX + (statics[path]=src)});
 
         }
 
@@ -84,7 +86,13 @@ module.exports = function(WS_PATH,ws_static_path,WS_PORT,cpArgs) {
         app.ws(WS_PATH, function(ws, req) {
 
           ws.on('message', function(msg) {
-            var payload = JSON.parse(msg.data);
+
+            var payload
+            try {
+                payload = JSON.parse(msg);
+            } catch (e) {
+                console.log({error_parsing:{msg:msg,error:e}});
+            }
             var fn = {
                 load : load
             }[payload.fn];
@@ -106,6 +114,8 @@ module.exports = function(WS_PATH,ws_static_path,WS_PORT,cpArgs) {
                 }
 
                 fn.apply(this,ARGS_IN);
+            } else {
+
             }
 
           });
@@ -119,19 +129,23 @@ module.exports = function(WS_PATH,ws_static_path,WS_PORT,cpArgs) {
         // mainly as they are on a different port.
         // once loaded, they autoload over the WS PORT.
         // (otherwise the outer html needs to know the port number, which breaks the concept)
-        load ("jspolyfills",function(mod){
+        load ("jspolyfills","http:","somehost",function(got_src){
+            console.log({got_src:got_src});
             var
             pf_path = Object.keys(statics)[0],
-            ext_path= ws_static_path+'extensions.js';
+            pf_url  = ws_static_path+"polyfills.js",
+            ext_url = ws_static_path+'extensions.js';
 
-            statics[pf_path]=ws_static_path+"polyfills.js";
-            statics[__filename] = ws_static_path+'extensions.js';
+            statics[pf_path]  = pf_url;
+            statics[ext_path] = ext_url;
 
             if (main_app) {
-                main_app.use (pf_path,node.express.static(nodeGetPath("jspolyfills")));
-                main_app.use (ext_path,node.express.static(__filename));
+                main_app.use (pf_url,  node.express.static(pf_path) );
+                main_app.use (ext_url, node.express.static(ext_path) );
             }
-            app.use(ext_path,node.express.static(__filename));
+
+            app.use(pf_url,node.express.static(pf_path));
+            app.use(ext_url,node.express.static(ext_path));
             console.log("jspolyfills,jsextensions loaded. available from",Object.values(statics));
         });
 

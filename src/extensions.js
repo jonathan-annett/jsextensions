@@ -39,8 +39,8 @@ var inclusionsBegin;
         var
         jsClass  = Object.jsClass,
         isString = jsClass.getTest(""),
-        cpArgs   = Function.args,
-        util     = Object.env.isNode ? require ("util") : window.util ? window.util :  (window.util=getUtil({}));
+        cpArgs   = Function.args;
+        //util     = Object.env.isNode ? require ("util") : window.util ? window.util :  (window.util=getUtil({}));
 
         extend(Object,Object_extensions);
         extend(Array,Array_extensions);
@@ -2285,7 +2285,7 @@ var inclusionsBegin;
             function camelCaseArray(a){return a.map(camelCaseWord).join('');}
 
             /* splits the supplied string with embedded spaces to each word camleCased  in a single word*/
-            function camelCaseWords(s){return camelCaseArray(s.split(" "));}
+            function camelCaseWords(s){return camelCaseArray(s.replace(/-|\./g," ").split(" ").filter(function(x){return x!=='';}));}
 
             string.prototype("toCamelCase",function toCamelCase() {
                 return camelCaseWords(this);
@@ -4444,7 +4444,7 @@ var inclusionsBegin;
             WS_PORT = 3029;
 
             if (Object.env.isNode) {
-                nodeExts = require("./extensions-node-functions.js")(WS_PATH,ws_static_path,WS_PORT,cpArgs);
+                nodeExts = require("./extensions-node-functions.js")(WS_PATH,ws_static_path,WS_PORT,cpArgs,__filename);
                 nodeGetPath=nodeExts.nodeGetPath;
                 func("startServer",nodeExts.nodeWSServer);
             }
@@ -4531,7 +4531,7 @@ var inclusionsBegin;
                 var
 
                 WSS = location.protocol.startsWith("https")?"wss":"ws",
-                SERVER = location.host,
+                SERVER = location.hostname,
                 WS_URL = WSS+"://" + SERVER + ":" + WS_PORT + WS_PATH,
 
                 ws = new WebSocket(WS_URL),
@@ -4555,8 +4555,9 @@ var inclusionsBegin;
                             if (events) events.push(fn); else fn();
                         },
                         remove : function(fn) {
+                            if (!events) return;
                             if (!fn) return !events.splice(0,events.length);
-                            var ix = events ? events.indexOf(fn) : -1;
+                            var ix = events.indexOf(fn);
                             if (ix>=0)events.splice(fn,1);
                         }
                     };
@@ -4586,7 +4587,7 @@ var inclusionsBegin;
                 browserSocketConnection.singleton = {
                     call : function () {
                         var args = cpArgs(arguments);
-                        var fn = args.unshift();
+                        var fn = args.shift();
                         var cb = (typeof args[args.length-1]==='function') ? args.pop() : undefined;
                         if (cb) {
                             args.push(CB_TOKEN);
@@ -4615,7 +4616,7 @@ var inclusionsBegin;
 
                     return window[name] ? cb(window[name])
 
-                    : browserSocketConnection().call("load",name,function(payload){
+                    : browserSocketConnection().call("load",name,location.protocol, location.hostname,function(payload){
 
                         var script = document.createElement("script");
                         script.onload = script.onreadystatechange = function(_, isAbort) {
