@@ -22,8 +22,13 @@ module.exports = function(WS_PATH,ws_static_path,WS_PORT,cpArgs) {
 
         if (!nodeGetPath('express') || !nodeGetPath ('express-ws')) return false;
 
-        var express = require('express');
-        var app = express();
+        var node = {
+            express : require('express'),
+            path : require("path")
+
+        };
+
+        var app = node.express();
         var expressWs = require('express-ws')(app);
 
 
@@ -52,10 +57,10 @@ module.exports = function(WS_PATH,ws_static_path,WS_PORT,cpArgs) {
             var mod = require(name);
 
             if (["object","function"].indexOf(typeof mod)>=0) {
-                if (typeof mod._script_src==='string') {
-                    path = mod._script_src;
-                    src = ws_static_path+name+'.js';
-                    app.use(src,express.static(path));
+                if (typeof mod._script_src_file==='string') {
+
+                    src = ws_static_path + mod._script_src ? mod._script_src : (name +'.js');
+                    app.use(src,node.express.static(mod._script_src_dir || mod._script_src_file));
                     return cb ({mode:"src",data:(statics[path]=src)});
 
                 }  else {
@@ -67,8 +72,10 @@ module.exports = function(WS_PATH,ws_static_path,WS_PORT,cpArgs) {
                 }
             }
 
-            src = ws_static_path+name+'.js';
-            app.use(src,express.static(path));
+            src = ws_static_path+name+'/'+name+'.js';
+            app.use(src,node.express.static(path));
+            app.use(ws_static_path+name+'/',node.express.static(node.path.dirname(path)));
+
             return cb ({mode:"src",data:(statics[path]=src)});
 
         }
@@ -106,13 +113,13 @@ module.exports = function(WS_PATH,ws_static_path,WS_PORT,cpArgs) {
 
         app.listen(WS_PORT,cb);
 
-        statics[__filename] = ws_static_path+'jsextensions.js';
-        app.use(ws_static_path+'jsextensions.js',express.static(__filename));
 
         load ("jspolyfills",function(mod){
-
-            console.log("jspolyfills,jsextensions loaded. available from",statics);
-
+            var pf_path = Object.keys(statics)[0];
+            statics[pf_path]=ws_static_path+"polyfills.js";
+            statics[__filename] = ws_static_path+'extensions.js';
+            app.use(ws_static_path+'extensions.js',node.express.static(__filename));
+            console.log("jspolyfills,jsextensions loaded. available from",Object.values(statics));
         });
 
         return {
