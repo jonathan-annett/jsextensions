@@ -18,7 +18,7 @@ module.exports = function(WS_PATH,ws_static_path,WS_PORT,cpArgs) {
         CB[0].cb===null;
     };
 
-    function nodeSockeServer(cb) {
+    function nodeSockeServer(main_app,cb) {
 
         if (!nodeGetPath('express') || !nodeGetPath ('express-ws')) return false;
 
@@ -114,11 +114,24 @@ module.exports = function(WS_PATH,ws_static_path,WS_PORT,cpArgs) {
         app.listen(WS_PORT,cb);
 
 
+
+        // we need to manually bootstrap the server for the polyfills and extensions files.
+        // mainly as they are on a different port.
+        // once loaded, they autoload over the WS PORT.
+        // (otherwise the outer html needs to know the port number, which breaks the concept)
         load ("jspolyfills",function(mod){
-            var pf_path = Object.keys(statics)[0];
+            var
+            pf_path = Object.keys(statics)[0],
+            ext_path= ws_static_path+'extensions.js';
+
             statics[pf_path]=ws_static_path+"polyfills.js";
             statics[__filename] = ws_static_path+'extensions.js';
-            app.use(ws_static_path+'extensions.js',node.express.static(__filename));
+
+            if (main_app) {
+                main_app.use (pf_path,node.express.static(nodeGetPath("jspolyfills")));
+                main_app.use (ext_path,node.express.static(__filename));
+            }
+            app.use(ext_path,node.express.static(__filename));
             console.log("jspolyfills,jsextensions loaded. available from",Object.values(statics));
         });
 
