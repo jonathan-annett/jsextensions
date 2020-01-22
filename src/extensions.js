@@ -17,17 +17,11 @@ var inclusionsBegin;
             if (e!=="boot"&&!isNode) {
                 window.removeEventListener("polyfills",loadExtensions);
             }
-            if (Object.env.verbose) console.log("loading extensions");
             extensions(Object.polyfill);
             String.extensionsTest(Object.env.verbose);
-            console.log("self tests passed");// we would have hit throw otherwise
-
-
-
-            if (!isNode) window.dispatchEvent(new CustomEvent('extensions', { file: 'extensions.js' }));
+            Object.notifyPollyfill('extensions.js','extensions');
         } else {
             if (e==="boot"&&!isNode) {
-                if (Object.env.verbose) console.log("waiting for polyfills...");
                 window.addEventListener("polyfills",loadExtensions);
             }
         }
@@ -136,7 +130,6 @@ var inclusionsBegin;
 
 
             });
-
 
             object("scriptify",function scriptify(obj,name) {
                 var self = {},proto={};
@@ -2329,19 +2322,7 @@ var inclusionsBegin;
 
         }
 
-
-
-        /*
-        stringifyPathArray([0,1,0,'hello-there']) --> '[0][1][0]["hello-there"]'
-
-        stringifyPathArray([0,0,0,'hello','there']) --> '[0][0][0].hello.there'
-
-        stringifyPathArray([2,0,0,'hello','there',3,5]) --> '[2][0][0].hello.there[3][5]'
-
-        */
-
         function trimTopTail(s) {return s.substr(1,s.length-2);}
-
 
         function stringifyPathNode(n) {
             if (n.charAt(0)+n.charAt(n.length-1)==='""') {
@@ -2367,12 +2348,6 @@ var inclusionsBegin;
             return p.map(JSON.stringify).map(stringifyPathNode).join('');
         }
 
-
-        /*
-        parsePathString('[4][5][3].this.then.that') --->[ 4, 5, 3, 'this', 'then', 'that' ]
-        parsePathString('[4][5][3].thing["tha\\u0022ng"]')---> [ 4, 5, 3, 'thing', 'tha"ng' ]
-
-        */
         function parsePathString(p) {
 
             var arr = [];

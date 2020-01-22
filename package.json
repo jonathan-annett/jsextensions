@@ -10,7 +10,7 @@
     "dependencies": {
         "express": "^4.17.1",
         "express-ws": "^4.0.0",
-        "jspolyfills": "github:jonathan-annett/jspolyfills#0950da6a6f1dfdc367d47d3589df61bba5369731"
+        "jspolyfills": "github:jonathan-annett/jspolyfills#a858c4dc5bf9e0fc6c68d118cd98a3699326f3e4"
     },
     "devDependencies": {},
     "scripts": {},
