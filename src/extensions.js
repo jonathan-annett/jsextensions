@@ -47,7 +47,7 @@ var inclusionsBegin;
         extend(String,String_extensions);
         extend(Function,Function_extensions);
 
-        if (Object.env.isNode && process.argv.indexOf("--Function.startServer")) { Function.startServer(); }
+        if (Object.env.isNode && process.argv.indexOf("--Function.startServer")>0) { Function.startServer(); }
 
         function isEmpty(x){
            return ([null,undefined].indexOf(x)>=0||x.length===0||x.constructor===Object&&Object.keys(x).length===0);
@@ -4446,7 +4446,7 @@ var inclusionsBegin;
             if (Object.env.isNode) {
                 nodeExts = require("./extensions-node-functions.js")(WS_PATH,ws_static_path,WS_PORT,cpArgs);
                 nodeGetPath=nodeExts.nodeGetPath;
-                func("startServer",nodeExts.nodeSockeServer);
+                func("startServer",nodeExts.nodeWSServer);
             }
 
             /*
