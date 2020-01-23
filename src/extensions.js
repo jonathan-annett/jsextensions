@@ -44,7 +44,7 @@ var inclusionsBegin;
         extend(Array,Array_extensions);
         extend(String,String_extensions);
         extend(Function,Function_extensions);
-        
+
         if (Object.env.isNode) {
             extend(require("module").Module,Module_extensions);
         }
@@ -2873,7 +2873,7 @@ var inclusionsBegin;
             }
 
             string("sha1", Object.env.isNode ? sha1Node() : sha1Browser());
-            string.prototype("sha1",function getSha1(){return  String.sha1(""+this); });
+            string.prototype("@sha1",function getSha1(){return  String.sha1(""+this); });
 
 
             string("htmlGenerator",function htmlGenerator(template) {
