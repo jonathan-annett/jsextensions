@@ -48,7 +48,7 @@ function requireSimModule() {
 
            result = babel.transform(js_src,{minified:true});
 
-           
+
           return result.code;
         },
         vm = require('vm');
@@ -86,7 +86,7 @@ function requireSimModule() {
         file : './browser-internal.js'
     },'simRequire');
 
-    delete self.lib.pkg.src;
+    //delete self.lib.pkg.src;
     delete self.lib.code;
     delete self.lib.min_code;
     delete self.lib.skipped;

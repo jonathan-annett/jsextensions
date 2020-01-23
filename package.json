@@ -16,6 +16,7 @@
         "browser-util": "npm:util@^0.12.1",
         "express": "^4.17.1",
         "express-ws": "^4.0.0",
+        "js-sha1": "^0.6.0",
         "jspolyfills": "github:jonathan-annett/jspolyfills#a858c4dc5bf9e0fc6c68d118cd98a3699326f3e4",
         "uglify-js": "^3.7.2"
     },
