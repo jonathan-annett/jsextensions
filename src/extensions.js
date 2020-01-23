@@ -37,980 +37,21 @@ var inclusionsBegin;
 
         var util     = Object.env.isNode ? require ("util") : window.util ? window.util :  (window.util=getUtil());
 
+
+        Date_toJSON();
+
         extend(Object,Object_extensions);
         extend(Array,Array_extensions);
         extend(String,String_extensions);
         extend(Function,Function_extensions);
+        if (Object.env.isNode) {
+            extend(require("module").Module,Module_extensions);
+        }
 
         if (Object.env.isNode && process.argv.indexOf("--Function.startServer")>0) { Function.startServer(); }
 
         function isEmpty(x){
            return ([null,undefined].indexOf(x)>=0||x.length===0||x.constructor===Object&&Object.keys(x).length===0);
-        }
-
-        function Object_extensions(object){
-
-            object("isEmpty",isEmpty);
-
-            // similar to JSON.stringify, varify converts the enumerable keys of an object
-            // to javascript source that defines each key as a discrete variables
-            // second option argument can be one of "var","let", or "const"
-
-            object("varify",function varify(obj,var_,equals,comma,semi,indents) {
-
-                var
-                fns = [],
-                quoteIn='*<<',      quoteOut=">>*",
-                deQuoteIn=/"\*<</g, deQuoteOut=/>>\*"/g,
-                //bsEncode='{*-bs-$-bs!*}',bsDecode=/\{\*-bs-\$-bs!\*\}/g,
-                bsDetect=/\\/g,bs='\\',
-                unquoted=function(s) {return quoteIn+s+quoteOut;},
-                resolve_unquoted=function(s) {
-                    return s.replace(deQuoteIn,'')
-                            .replace(deQuoteOut,'')/*
-                            .replace(bsDecode,bs)*/;},
-                keys = Object.keys(obj).filter(function(key){
-                    return  ([null,undefined].indexOf(obj[key])<0);
-                }),
-                html_script_fixups = [
-                    {source:"<", flags:"g", repWith:"\\u003c"},
-                    {source:">", flags:"g", repWith:"\\u003e"}
-                ],
-
-                json_replacer = function(k,v) {
-                    if (typeof v ==='function') {
-                        var ix = fns.length;
-                        fns.push(v.toString());
-                        return '{$!func['+ix+']tion!$}';
-                    }
-
-                    if (typeof v==='object'&& v.constructor===Date) {
-                        return unquoted("new Date("+v.getTime()+")");
-                    }
-
-                    if (typeof v==='object'&& v.constructor===RegExp) {
-                        return unquoted("new RegExp('"+v.source.replace(bsDetect,bs)+"','"+v.flags+"')");
-                    }
-
-                    return v;
-                },
-                fixup_object=function(key){
-
-                    var
-                    fixed = resolve_unquoted(JSON.stringify_dates(obj[key],json_replacer,indents)),
-                    re_replacer = function(re){
-                        fixed=fixed.replace(new RegExp (re.source,re.flags),re.repWith);
-                    },
-                    inject_function = function(fn,ix){
-                        [
-                            { source:"\"\\{\\$!func\\["+ix+"\\]tion!\\$\\}\"",   flags:"s",  repWith:fn },
-                            { source:"(?<=function anonymous\\(.*)(\\n)(?=\))",  flags:"sg", repWith:"" },
-                            { source:"(function anonymous\\()",                  flags:"sg", repWith:"function (" }
-                        ].forEach(re_replacer);
-                    };
-
-                    html_script_fixups.forEach(re_replacer);
-
-                    fns.forEach(inject_function);
-
-                    return key + equals + fixed;
-
-                };
-
-                if (keys.length===0) return '';
-
-
-                if (var_===undefined) var_ = "var ";
-                if (equals===undefined) equals = " = ";
-                if (comma===undefined) comma = ',\n';
-                if (semi===undefined) semi = ";";
-                indents = indents===null?undefined:4;
-
-                return var_+keys.map(fixup_object).join(comma)+semi;
-
-
-            });
-
-            object("scriptify",function scriptify(obj,name) {
-                var self = {},proto={};
-                var template = function scriptified() {
-                    var
-                    /*internal vars*/
-                    self = {self:"self"};
-                    return Object.defineProperties(self,proto);
-                };
-                var selfKeys=Object.keys(obj);
-                var selfVars=selfKeys.filter(function(key){return typeof obj[key]!=='function';});
-                var selfFns=selfKeys.filter(function(key){return typeof obj[key]==='function';});
-
-                selfVars.forEach(function(key){
-                    self[key]=obj[key];
-                    var FN = Function;
-                    proto[key]={
-                        get: new FN('    return '+key+';'),
-                        set: new FN('val','   '+key+'=val;'),
-                        enumerable:true,
-                        configurable:true
-                    };
-                });
-
-                selfFns.forEach(function(key){
-                    proto[key]={
-                        value: obj[key],
-                        enumerable:true,
-                        configurable:true
-                    };
-                });
-
-                return (
-                    new Array (13).join(" ")+template.toString()).reindent(0)
-                   .replace(/scriptified/,name)
-                   .replace(/\{self:"self"\}/,
-
-                       (
-                       Object.varify(self,'{},',undefined,undefined,'')+
-                       Object.varify(proto,',\n\n/*properties*/\nproto={',':',',\n','}',null)
-                       ).reindent(4).trim()
-                   );
-            });
-
-            object("keyCount",function keyCount(o) {
-                  if (o !== Object(o))
-                    throw new TypeError('Object.keyCount called on a non-object');
-                  var p,c=0,isKey=Object.prototype.hasOwnProperty.bind(o);
-                  for (p in o) if (isKey(p)) c++;
-                  return c;
-            });
-
-            object("removeKey",function removeKey(obj,k){
-                var res = obj[k];
-                if (res!==undefined) {
-                    delete obj[k];
-                    return res;
-                }
-            });
-
-            object("replaceKey",function replaceKey(obj,k,v){
-                var res = obj[k];
-                obj[k]=v;
-                return res;
-            });
-
-            object("removeAllKeys",function removeAllKeys(obj){
-                var res = Object.keys(obj);
-                res.forEach(function(k){
-                    delete obj[k];
-                });
-                return res;
-            });
-
-            object("mergeKeys",function mergeKeys(obj1,obj2,keys,keep){
-                keys = keys||Object.keys(obj2);
-                keys.forEach(function(k){
-                    if (keep && obj1[k]!==undefined) return;
-                    obj1[k]=obj2[k];
-                });
-                return obj1;
-            });
-
-            object("subtractKeys",function subtractKeys (obj,keys,isObject){
-                var res={};
-                keys = isObject ? Object.keys(keys) : keys;
-                keys.forEach(function(k){
-                    if (obj[k]) {
-                        res[k]=obj[k];
-                        delete obj[k];
-                    }
-                });
-                return res;
-            });
-
-            object("iterateKeys",function iterateKeys(obj,fn){
-                    Object.keys(obj).some(function(k,i,ks){
-                        try {
-                            fn(k,obj[k],i,ks);
-                            return false;
-                        } catch (e) {
-                            return true;
-                        }
-                    });
-                });
-
-            var iterator = function(o,cb,k,i,ks) {
-              var v = o[k];
-              return cb.apply(o,[k,v,i,ks,o,typeof v]);
-            },
-
-            iterator2 = function(o,cb,k,i,ks) {
-              var v = o[k];
-              return cb.apply(o,[{key:k,value:v,index:i,keys:ks,obj:o,type:typeof v}]);
-            };
-
-            object("keyLoop",function keyLoop (obj,cb,m) {
-                return Object.keys(obj).forEach((m?iterator2:iterator).bind(obj,obj,cb));
-            });
-
-            object("keyMap",function keyMap (obj,cb,m) {
-                return Object.keys(obj).map((m?iterator2:iterator).bind(obj,obj,cb));
-            });
-
-            object("keyFilter",function keyFilter (obj,cb,m) {
-              var r={},o=obj;
-              Object.keys(o).filter((m?iterator2:iterator).bind(o,o,cb)).forEach(function(k){
-                  r[k]=o[k];
-               });
-              return r;
-            });
-
-            /*
-            Object_polyfills.OK=Object.keys.bind(Object);
-            Object_polyfills.DP=Object.defineProperties.bind(Object);
-            Object_polyfills.HIDE=function (o,x,X){
-                  Object.defineProperty(o,x,{
-                      enumerable:false,
-                      configurable:true,
-                      writable:false,
-                      value : X
-                  });
-                  return X;
-            };
-            return {
-                OK   : Object_polyfills.OK,
-                DP   : Object_polyfills.DP,
-                HIDE : Object_polyfills.HIDE
-            };
-            */
-            var ab_now =(function(){
-
-                if (Object.env.isNode) {
-                    var perf_hooks = require("perf_hooks");
-                    return perf_hooks.performance.now.bind(perf_hooks.performance);
-                }
-
-                if (typeof performance==='object') {
-                    if (typeof performance.now==='function') {
-                        return performance.now.bind(performance);
-                    }
-                }
-                return Date.now.bind(Date);
-            })();
-
-            (function(obj,obj2,myfunc_a,myfunc_b){if (true) return;
-                // function modeS:
-                // false - unbound global, but lives in obj[fn]
-                // eg
-                Object.a_b_test(obj,"myfunc",10,1,false, myfunc_a, myfunc_b);
-                // true      - object bound to obj, lives in obj[fn]
-                // eg
-                Object.a_b_test(obj,"myfunc",10,1,true, myfunc_a, myfunc_b);
-                // obj2 (an object instance) - bound to obj2, but lives in obj[fn]
-                // eg
-                Object.a_b_test(obj,"myfunc",10,1,obj2, myfunc_a, myfunc_b);
-                // Class (eg String) - fn resides in Class.prototype[fn], fn is applied/called ad hoc
-            })();
-
-            Object.a_b_test_logging=false;
-
-            object("a_b_test",function(obj,fn,trials,loops,mode){
-
-                if (arguments.length<6) return false;
-                if (typeof fn!=='string') return false;
-                if (["number","undefined"].indexOf(typeof trials)<0) return false;
-                if (["number","undefined"].indexOf(typeof loops)<0) return false;
-                var THIS=false,logging=Object.a_b_test_logging;
-                if (typeof obj==='object') {
-                    switch (mode) {
-                        case false : THIS=undefined;break;
-                        case true  : THIS=undefined;break;
-                        default:
-                        if (['function','undefined'].indexOf(typeof mode) <0 ) {
-                            THIS = mode; break;
-                        } else {
-                            if ((obj.constructor===mode) && (typeof mode==='function')) {
-                                THIS=undefined;
-                            }
-                        }
-                    }
-                }
-                if (THIS===false) return false;
-                var config = Object.getOwnPropertyDescriptor(obj,fn);
-                if (!config) return false;
-                if (!(config.writable && config.configurable) ) return false;
-
-                var native = obj[fn];
-
-                if (typeof native!=='function') return false;
-                trials = trials || 100;
-                loops = loops || 1;
-
-                var fns=cpArgs(arguments).slice(5);
-                if (fns.some(function(fn){return typeof fn !=='function';})) {
-                    return false;
-                }
-
-                fns.push(native);
-
-                var
-                count    = 0,
-                a_b      = 0,
-                totals   = fns.map(function(){return 0;}),
-                ab_count = fns.length,
-                obj2     = mode,
-                next_trial=function() {
-                    count++;
-                    if (count>=trials) {
-                        use_best();
-                    }
-                },
-                next = function (inc) {
-                    a_b++;
-                    if (a_b>=ab_count) {
-                        a_b=0;
-
-                    }
-                    if (inc) {
-                         next_trial();
-                    }
-                },
-                names = fns.map(function(x){return x.name;}).join(",");
-
-                function shim ()
-                {
-                    var
-                    this_=THIS||this,
-                    result,
-                    start,start_,
-                    finish,elapsed,compare,
-                    do_loops=loops,
-                    args=cpArgs(arguments),
-                    err=loops===1?false:new Error ("inconsistent results");
-                    try {
-                        start=ab_now();
-                        result=fns[a_b].apply(this_,args);
-                        finish=ab_now();
-                        elapsed=(finish-start);
-                        totals[a_b] += elapsed;
-                        if (do_loops===1){
-                            console.log("trial #"+count+": invoked",fns[a_b].name,args.length,"args returning",result,"took",elapsed.toFixed(3),"msec");
-                            next(true);
-                        } else {
-                            start_=start;
-                            next(false);
-                            while (--do_loops > 0) {
-                                start=ab_now();
-                                compare=fns[a_b].apply(this_,args);
-                                finish=ab_now();
-                                if (result!==compare){
-                                    throw err;
-                                }
-                                elapsed=(finish-start);
-                                totals[a_b] += elapsed;
-                                next(false);
-                            }
-                            elapsed = finish-start_;
-                            console.log("trial #"+count+": invoked",names,"(",args.length,"args)",loops,"times, returning",result,"took",elapsed.toFixed(3),"msec (",(elapsed/loops).toFixed(3),"msec per invoke)");
-                            next_trial();
-                        }
-
-                    } catch (e) {
-                        if (fns[a_b]!==native) {
-                            //was external a/b - abandon trials
-                            obj[fn]=native;//forced unhook
-                            return native.apply(this_,args);
-                        } else {
-                            // was native
-                            throw e;
-                        }
-                    }
-
-                    return result;
-
-                }
-
-                function shim_quiet ()
-                {
-                    var
-                    this_=THIS||this,
-                    result,
-                    start,start_,
-                    finish,elapsed,compare,
-                    do_loops=loops,
-                    args=cpArgs(arguments),
-                    err=loops===1?false:new Error ("inconsistent results");
-                    try {
-                        start=ab_now();
-                        result=fns[a_b].apply(this_,args);
-                        finish=ab_now();
-                        elapsed=(finish-start);
-                        totals[a_b] += elapsed;
-                        if (do_loops===1){
-                            next(true);
-                        } else {
-                            start_=start;
-                            next(false);
-                            while (--do_loops > 0) {
-                                start=ab_now();
-                                compare=fns[a_b].apply(this_,args);
-                                finish=ab_now();
-                                if (result!==compare){
-                                    throw err;
-                                }
-                                elapsed=(finish-start);
-                                totals[a_b] += elapsed;
-                                next(false);
-                            }
-                            elapsed = finish-start_;
-                            next_trial();
-                        }
-
-                    } catch (e) {
-                        if (fns[a_b]!==native) {
-                            //was external a/b - abandon trials
-                            obj[fn]=native;//forced unhook
-                            return native.apply(this_,args);
-                        } else {
-                            // was native
-                            throw e;
-                        }
-                    }
-
-                    return result;
-
-                }
-
-
-                function use_best() {
-                    var
-                    chr_a=97,//"a".charCodeAt(0),
-                    best=Infinity,best_ix=-1;
-                    for (var i=0;i<ab_count;i++) {
-                        if (totals[i]<best) {
-                            best=totals[i];
-                            best_ix=i;
-                        }
-                    }
-                    var average=totals[best_ix]/count;
-                    if (logging) {
-                        console.log(totals.map(function(total,ix){
-                            return {
-                                name        : fns[ix].name,
-                                total       : Number(total.toFixed(3)),
-                                per_trial   : Number((total/count).toFixed(3)),
-                                per_invoke  : Number((total/(count*loops)).toFixed(4)),
-                            };
-                        }));
-
-                        if (fns[best_ix]===native) {
-                            console.log("reverting to native mode for",fn,"after",count,"tests",average,"average msec");
-                        } else {
-                            console.log("selected mode",String.fromCharCode(chr_a+best_ix),"for",fn,"after",count,"tests",average,"average msec");
-                        }
-                    }
-                    config.value = fns[best_ix];
-                    delete obj[fn];
-                    Object.defineProperty(obj,fn,config);
-                }
-
-                config.value =logging ? shim : shim_quiet;
-                delete obj[fn];
-                Object.defineProperty(obj,fn,config);
-
-            });
-
-            object("a_b_test_async",function(obj,fn,trials,mode){
-
-                if (arguments.length<5) return false;
-                if (typeof fn!=='string') return false;
-                if (["number","undefined"].indexOf(typeof trials)<0) return false;
-                if (["number","undefined"].indexOf(typeof loops)<0) return false;
-                var THIS=false,logging=Object.a_b_test_logging;
-                if (typeof obj==='object') {
-                    switch (mode) {
-                        case false : THIS=undefined;break;
-                        case true  : THIS=undefined;break;
-                        default:
-                        if (['function','undefined'].indexOf(typeof mode) <0 ) {
-                            THIS = mode; break;
-                        } else {
-                            if ((obj.constructor===mode) && (typeof mode==='function')) {
-                                THIS=undefined;
-                            }
-                        }
-                    }
-                }
-                if (THIS===false) return false;
-                var config = Object.getOwnPropertyDescriptor(obj,fn);
-                if (!config) return false;
-                if (!(config.writable && config.configurable) ) return false;
-
-                var native = obj[fn];
-
-                if (typeof native!=='function') return false;
-                trials = trials || 100;
-
-                var fns=cpArgs(arguments).slice(4);
-                if (fns.some(function(fn){return typeof fn !=='function';})) {
-                    return false;
-                }
-
-                fns.push(native);
-
-                var
-                count    = 0,
-                a_b      = 0,
-                totals   = fns.map(function(){return 0;}),
-                ab_count = fns.length,
-                obj2     = mode,
-                next_trial=function() {
-                    count++;
-                    if (count>=trials) {
-                        use_best();
-                    }
-                },
-                next = function (inc) {
-                    a_b++;
-                    if (a_b>=ab_count) {
-                        a_b=0;
-
-                    }
-                    if (inc) {
-                         next_trial();
-                    }
-                },
-                names = fns.map(function(x){return x.name;}).join(",");
-
-
-                function shim_sync(args,this_)
-                {
-                    var
-                    result,
-                    start,start_,
-                    finish,elapsed,compare;
-
-                    try {
-                        start=ab_now();
-                        result=fns[a_b].apply(this_,args);
-                        finish=ab_now();
-                        elapsed=(finish-start);
-                        totals[a_b] += elapsed;
-
-                        console.log("trial #"+count+": invoked",fns[a_b].name,args.length,"args returning",result,"took",elapsed.toFixed(3),"msec");
-                        next(true);
-
-
-                    } catch (e) {
-                        if (fns[a_b]!==native) {
-                            //was external a/b - abandon trials
-                            obj[fn]=native;//forced unhook
-                            return native.apply(this_,args);
-                        } else {
-                            // was native
-                            throw e;
-                        }
-                    }
-
-                    return result;
-                }
-
-                function shim ()
-                {
-                    var
-                    this_=THIS||this,args=cpArgs(arguments),
-                    cb = args.length>0 && typeof args[args.length-1]==='function' ? args[args.length-1] : false;
-                    if (!cb) return shim_sync(args,this_);
-
-                    var
-                    result,
-                    start,start_,
-                    finish,elapsed,compare;
-
-                    args[args.length-1]=function() {
-                        finish=ab_now();
-                        elapsed=(finish-start);
-                        totals[a_b] += elapsed;
-                        console.log("trial #"+count+": invoked",fns[a_b].name,args.length,"args returning",result,"took",elapsed.toFixed(3),"msec");
-                        next(true);
-                        cb.apply(this_,cpArgs(arguments));
-                    };
-
-                    start=ab_now();
-                    return fns[a_b].apply(this_,args);
-                }
-
-                function shim_sync_quiet(args,this_)
-                {
-                    var
-                    result,
-                    start,start_,
-                    finish,elapsed,compare;
-
-                    try {
-                        start=ab_now();
-                        result=fns[a_b].apply(this_,args);
-                        finish=ab_now();
-                        elapsed=(finish-start);
-                        totals[a_b] += elapsed;
-
-                        next(true);
-
-
-                    } catch (e) {
-                        if (fns[a_b]!==native) {
-                            //was external a/b - abandon trials
-                            obj[fn]=native;//forced unhook
-                            return native.apply(this_,args);
-                        } else {
-                            // was native
-                            throw e;
-                        }
-                    }
-
-                    return result;
-                }
-
-                function shim_quiet ()
-                {
-                    var
-                    this_=THIS||this,args=cpArgs(arguments),
-                    cb = args.length>0 && typeof args[args.length-1]==='function' ? args[args.length-1] : false;
-                    if (!cb) return shim_sync_quiet(args,this_);
-
-                    var
-                    result,
-                    start,start_,
-                    finish,elapsed,compare;
-
-                    args[args.length-1]=function() {
-                        finish=ab_now();
-                        elapsed=(finish-start);
-                        totals[a_b] += elapsed;
-                        next(true);
-                        cb.apply(this_,cpArgs(arguments));
-                    };
-
-                    start=ab_now();
-                    return fns[a_b].apply(this_,args);
-                }
-
-                function use_best() {
-                    var
-                    chr_a=97,//"a".charCodeAt(0),
-                    best=Infinity,best_ix=-1;
-                    for (var i=0;i<ab_count;i++) {
-                        if (totals[i]<best) {
-                            best=totals[i];
-                            best_ix=i;
-                        }
-                    }
-                    var average=totals[best_ix]/count;
-                    if (logging) {
-                        console.log(totals.map(function(total,ix){
-                            return {
-                                name        : fns[ix].name,
-                                total       : Number(total.toFixed(3)),
-                                per_invoke   : Number((total/count).toFixed(3))
-                            };
-                        }));
-
-                        if (fns[best_ix]===native) {
-                            console.log("reverting to native mode for",fn,"after",count,"tests",average,"average msec");
-                        } else {
-                            console.log("selected mode",String.fromCharCode(chr_a+best_ix),"for",fn,"after",count,"tests",average,"average msec");
-                        }
-                    }
-                    config.value = fns[best_ix];
-                    delete obj[fn];
-                    Object.defineProperty(obj,fn,config);
-                }
-
-                config.value =logging ? shim : shim_quiet;
-                delete obj[fn];
-                Object.defineProperty(obj,fn,config);
-
-            });
-
-            object("a_b_test_tester",function(loops,quick){
-
-                loops=loops||1;
-
-                var logging_backup = Object.a_b_test_logging;
-                Object.a_b_test_logging=true;
-
-                var String_prototype_indexOf=String.prototype.indexOf;
-
-                var sample = quick ? "the quick brown fox jumps over the lazy dog" : require("fs").readFileSync("./words.txt","utf8");
-                var indexOfC_lookups = (function(sep){
-                    var d = {},c=0;
-                    console.log("preparing lookups...");
-                    var r,k,sampleSet = sample.split(sep);
-                    var max = Math.min(25000,sampleSet.length);
-
-                    while (c<max) {
-                        r = Math.floor(Math.random()*sampleSet.length);
-                        k = sampleSet[r];
-                        if (k) {
-                           sampleSet[r]=null;
-                           k=k.trim();
-                           d[k]=sample.indexOf(k);
-                           c++;
-                           if (c % 500 ===0) {
-                               sampleSet  = sampleSet.filter(function(x){return x!==null;});
-                               console.log("added",c,"random words, just added  [",k.padStart(20),"]",(c/(max/100)).toFixed(1),"% complete");
-
-                           }
-                        }
-                    }
-
-                    var keys= Object.keys(d),first=keys.shift(),last=keys.pop();
-                    keys.splice(0,keys.length);
-                    console.log("prepared",c,"lookups",first,"thru",last);
-                    return d;
-                })(quick ? " " : "\n");
-
-
-
-                function indexOf_a(str) {
-                    var s = this;
-                    var c = s.length,l=str.length;
-                    for (var i = 0; i < c ; i ++ ) {
-                      if (s.substr(i,l)===str) {
-                        return i;
-                        }
-                      }
-                    return -1;
-                }
-
-                function indexOf_b(str) {
-                    var s = this;
-                    var c = s.length,l=str.length;
-                    for (var i = 0; i < c ; i ++ ) {
-                      if (s.substr(i).startsWith(str)) {
-                        return i;
-                        }
-                      }
-                    return -1;
-                }
-
-                function indexOf_c(str) {
-                    var x = indexOfC_lookups[str];
-                    if (x===undefined) x = String_prototype_indexOf.call(this,str);
-                    return x;
-                }
-
-                Object.a_b_test(String.prototype,"indexOf",10,loops,String, indexOf_a, indexOf_b, indexOf_c);
-
-
-
-                for(var i = 0; i < 10; i++) {
-                    sample.indexOf("fox");
-                    sample.indexOf("jumps");
-                    sample.indexOf("notFound");
-                    sample.indexOf("abacinate");
-                    sample.indexOf("dog");
-                    sample.indexOf("lazy");
-                    sample.indexOf("quick");
-                    sample.indexOf("zebra");
-                    sample.indexOf("the");
-                }
-
-
-
-
-                var tester = {
-
-                    test : function tester_native (a,b) {
-                        return a.indexOf(b);
-                    }
-
-                };
-
-                Object.a_b_test(tester,"test",10,loops,false,
-                    function tester_testA(a,b) {
-                        return indexOf_a.call(a,b);
-                    },
-                    function tester_testB(a,b) {
-                        return indexOf_b.call(a,b);
-                    },
-                    function tester_testC(a,b) {
-                        return indexOf_c.call(a,b);
-                    }
-
-                );
-
-                for(i = 0; i < 10; i++) {
-                    tester.test(sample,"fox");
-                    tester.test(sample,"jumps");
-                    tester.test(sample,"notFound");
-                    tester.test(sample,"abacinate");
-                    tester.test(sample,"dog");
-                    tester.test(sample,"lazy");
-                    tester.test(sample,"quick");
-                    tester.test(sample,"zebra");
-                    tester.test(sample,"the");
-                }
-
-
-
-                var tester2 = {
-                    test : sample.indexOf
-                };
-
-
-                Object.a_b_test(tester2,"test",10,loops,sample,
-                    indexOf_a,
-                    indexOf_b,
-                    indexOf_c
-                );
-
-
-                for(i = 0; i < 10; i++) {
-                    tester2.test("fox");
-                    tester2.test("jumps");
-                    tester2.test("notFound");
-                    tester2.test("abacinate");
-                    tester2.test("dog");
-                    tester2.test("lazy");
-                    tester2.test("quick");
-                    tester2.test("zebra");
-                    tester2.test("the");
-                }
-
-                var tester3 = {
-                    data : sample,
-                };
-                Object.defineProperties(tester3,{
-                   test : {
-                       value : function tester3_native(str) {
-                           return this.data.indexOf(str);
-                       },
-                       configurable : true,
-                       writable: true
-                   },
-
-                   test_a : {
-                       value : function tester3_testA(str) {
-                           return indexOf_a.call(this.data,str);
-                       }
-                   },
-                   test_b : {
-                       value : function tester3_testB(str) {
-                           return indexOf_b.call(this.data,str);
-                       }
-                   },
-                   test_c : {
-                       value : function tester3_testC(str) {
-                           return indexOf_c.call(this.data,str);
-                       }
-                   }
-                });
-
-
-                Object.a_b_test(tester3,"test",10,loops,true,
-                    tester3.test_a,
-                    tester3.test_b,
-                    tester3.test_c
-                );
-
-
-
-                for(i = 0; i < 10; i++) {
-                    tester3.test("fox");
-                    tester3.test("jumps");
-                    tester3.test("notFound");
-                    tester3.test("abacinate");
-                    tester3.test("dog");
-                    tester3.test("lazy");
-                    tester3.test("quick");
-                    tester3.test("zebra");
-                    tester3.test("the");
-                }
-
-                Object.a_b_test_logging =logging_backup;
-
-            });
-
-            object("a_b_test_async_tester",function(trials){
-
-                trials=trials||10;
-                var logging_backup = Object.a_b_test_logging;
-                Object.a_b_test_logging=true;
-
-                var fs= require("fs");
-
-                var readFileNative = fs.readFile.bind(fs);
-
-                function readFile_a () {
-                    var delay = Math.floor(100+(Math.random()*900));
-                    var args=[readFileNative,delay].concat(cpArgs(arguments));
-                    return setTimeout.apply (global,args);
-                }
-
-                var count = trials+10;
-
-                function afterRead(err,data){
-                    console.log({afterRead:{err:err,
-                            data:typeof data,
-                            length:data?data.length:undefined,
-                            count:count
-                    }});
-                    if (!err && data.indexOf("fs.readFile")>0) {
-
-
-
-                        if (count-->0) {
-                           console.log("looping");
-                           fs.readFile(__filename,"utf8",afterRead);
-                        } else {
-                            Object.a_b_test_logging =logging_backup;
-                        }
-
-                    } else {
-                        console.log("???");
-                    }
-                }
-
-
-                fs.readFile(__filename,"utf8",function(err,data){
-
-                    console.log({err:err,
-                            data:typeof data,
-                            length:data?data.length:undefined
-                    });
-
-
-                    if (!err && data.indexOf("fs.readFile")>0) {
-
-                        console.log("native fs.readFile looks ok");
-
-                        readFile_a(__filename,"utf8",function(err,data){
-
-                            console.log({readFile_a:{err:err,
-                                    data:typeof data,
-                                    length:data?data.length:undefined
-                            }});
-
-                            if (!err && data.indexOf("fs.readFile")>0) {
-
-                                console.log("delayed fs.readFile stub looks ok");
-
-                                Object.a_b_test_async(
-                                    fs,"readFile",trials,true,
-                                    readFile_a.bind(fs)
-                                );
-
-                                fs.readFile(__filename,"utf8",afterRead);
-
-
-                            }
-                        });
-                    }
-
-
-                });
-
-
-            });
-
         }
 
         function getUtil() {
@@ -2322,6 +1363,971 @@ var inclusionsBegin;
 
         }
 
+        function Object_extensions(object){
+
+            object("isEmpty",isEmpty);
+
+            // similar to JSON.stringify, varify converts the enumerable keys of an object
+            // to javascript source that defines each key as a discrete variables
+            // second option argument can be one of "var","let", or "const"
+
+            object("varify",function varify(obj,var_,equals,comma,semi,indents) {
+
+                var
+                fns = [],
+                quoteIn='*<<',      quoteOut=">>*",
+                deQuoteIn=/"\*<</g, deQuoteOut=/>>\*"/g,
+                //bsEncode='{*-bs-$-bs!*}',bsDecode=/\{\*-bs-\$-bs!\*\}/g,
+                bsDetect=/\\/g,bs='\\',
+                unquoted=function(s) {return quoteIn+s+quoteOut;},
+                resolve_unquoted=function(s) {
+                    return s.replace(deQuoteIn,'')
+                            .replace(deQuoteOut,'')/*
+                            .replace(bsDecode,bs)*/;},
+                keys = Object.keys(obj).filter(function(key){
+                    return  ([null,undefined].indexOf(obj[key])<0);
+                }),
+                html_script_fixups = [
+                    {source:"<", flags:"g", repWith:"\\u003c"},
+                    {source:">", flags:"g", repWith:"\\u003e"}
+                ],
+
+                json_replacer = function(k,v) {
+                    if (typeof v ==='function') {
+                        var ix = fns.length;
+                        fns.push(v.toString());
+                        return '{$!func['+ix+']tion!$}';
+                    }
+
+                    if (typeof v==='object'&& v.constructor===Date) {
+                        return unquoted("new Date("+v.getTime()+")");
+                    }
+
+                    if (typeof v==='object'&& v.constructor===RegExp) {
+                        return unquoted("new RegExp('"+v.source.replace(bsDetect,bs)+"','"+v.flags+"')");
+                    }
+
+                    return v;
+                },
+                fixup_object=function(key){
+
+                    var
+                    fixed = resolve_unquoted(JSON.stringify_dates(obj[key],json_replacer,indents)),
+                    re_replacer = function(re){
+                        fixed=fixed.replace(new RegExp (re.source,re.flags),re.repWith);
+                    },
+                    inject_function = function(fn,ix){
+                        [
+                            { source:"\"\\{\\$!func\\["+ix+"\\]tion!\\$\\}\"",   flags:"s",  repWith:fn },
+                            { source:"(?<=function anonymous\\(.*)(\\n)(?=\\))",  flags:"sg", repWith:"" },
+                            { source:"(function anonymous\\()",                  flags:"sg", repWith:"function (" }
+                        ].forEach(re_replacer);
+                    };
+
+                    html_script_fixups.forEach(re_replacer);
+
+                    fns.forEach(inject_function);
+
+                    return key + equals + fixed;
+
+                };
+
+                if (keys.length===0) return '';
+
+
+                if (var_===undefined) var_ = "var ";
+                if (equals===undefined) equals = " = ";
+                if (comma===undefined) comma = ',\n';
+                if (semi===undefined) semi = ";";
+                indents = indents===null?undefined:4;
+
+                return var_+keys.map(fixup_object).join(comma)+semi;
+
+
+            });
+
+            object("scriptify",function scriptify(obj,name) {
+                var self = {},proto={};
+                var template = function scriptified() {
+                    var
+                    /*internal vars*/
+                    self = {self:"self"};
+                    return Object.defineProperties(self,proto);
+                };
+                var selfKeys=Object.keys(obj);
+                var selfVars=selfKeys.filter(function(key){return typeof obj[key]!=='function';});
+                var selfFns=selfKeys.filter(function(key){return typeof obj[key]==='function';});
+
+                selfVars.forEach(function(key){
+                    self[key]=obj[key];
+                    var FN = Function;
+                    proto[key]={
+                        get: new FN('    return '+key+';'),
+                        set: new FN('val','   '+key+'=val;'),
+                        enumerable:true,
+                        configurable:true
+                    };
+                });
+
+                selfFns.forEach(function(key){
+                    proto[key]={
+                        value: obj[key],
+                        enumerable:true,
+                        configurable:true
+                    };
+                });
+
+                return (
+                    new Array (13).join(" ")+template.toString()).reindent(0)
+                   .replace(/scriptified/,name)
+                   .replace(/\{self:"self"\}/,
+
+                       (
+                       Object.varify(self,'{},',undefined,undefined,'')+
+                       Object.varify(proto,',\n\n/*properties*/\nproto={',':',',\n','}',null)
+                       ).reindent(4).trim()
+                   );
+            });
+
+            object("keyCount",function keyCount(o) {
+                  if (o !== Object(o))
+                    throw new TypeError('Object.keyCount called on a non-object');
+                  var p,c=0,isKey=Object.prototype.hasOwnProperty.bind(o);
+                  for (p in o) if (isKey(p)) c++;
+                  return c;
+            });
+
+            object("removeKey",function removeKey(obj,k){
+                var res = obj[k];
+                if (res!==undefined) {
+                    delete obj[k];
+                    return res;
+                }
+            });
+
+            object("replaceKey",function replaceKey(obj,k,v){
+                var res = obj[k];
+                obj[k]=v;
+                return res;
+            });
+
+            object("removeAllKeys",function removeAllKeys(obj){
+                var res = Object.keys(obj);
+                res.forEach(function(k){
+                    delete obj[k];
+                });
+                return res;
+            });
+
+            object("mergeKeys",function mergeKeys(obj1,obj2,keys,keep){
+                keys = keys||Object.keys(obj2);
+                keys.forEach(function(k){
+                    if (keep && obj1[k]!==undefined) return;
+                    obj1[k]=obj2[k];
+                });
+                return obj1;
+            });
+
+            object("subtractKeys",function subtractKeys (obj,keys,isObject){
+                var res={};
+                keys = isObject ? Object.keys(keys) : keys;
+                keys.forEach(function(k){
+                    if (obj[k]) {
+                        res[k]=obj[k];
+                        delete obj[k];
+                    }
+                });
+                return res;
+            });
+
+            object("iterateKeys",function iterateKeys(obj,fn){
+                    Object.keys(obj).some(function(k,i,ks){
+                        try {
+                            fn(k,obj[k],i,ks);
+                            return false;
+                        } catch (e) {
+                            return true;
+                        }
+                    });
+                });
+
+            var iterator = function(o,cb,k,i,ks) {
+              var v = o[k];
+              return cb.apply(o,[k,v,i,ks,o,typeof v]);
+            },
+
+            iterator2 = function(o,cb,k,i,ks) {
+              var v = o[k];
+              return cb.apply(o,[{key:k,value:v,index:i,keys:ks,obj:o,type:typeof v}]);
+            };
+
+            object("keyLoop",function keyLoop (obj,cb,m) {
+                return Object.keys(obj).forEach((m?iterator2:iterator).bind(obj,obj,cb));
+            });
+
+            object("keyMap",function keyMap (obj,cb,m) {
+                return Object.keys(obj).map((m?iterator2:iterator).bind(obj,obj,cb));
+            });
+
+            object("keyFilter",function keyFilter (obj,cb,m) {
+              var r={},o=obj;
+              Object.keys(o).filter((m?iterator2:iterator).bind(o,o,cb)).forEach(function(k){
+                  r[k]=o[k];
+               });
+              return r;
+            });
+
+            /*
+            Object_polyfills.OK=Object.keys.bind(Object);
+            Object_polyfills.DP=Object.defineProperties.bind(Object);
+            Object_polyfills.HIDE=function (o,x,X){
+                  Object.defineProperty(o,x,{
+                      enumerable:false,
+                      configurable:true,
+                      writable:false,
+                      value : X
+                  });
+                  return X;
+            };
+            return {
+                OK   : Object_polyfills.OK,
+                DP   : Object_polyfills.DP,
+                HIDE : Object_polyfills.HIDE
+            };
+            */
+            var ab_now =(function(){
+
+                if (Object.env.isNode) {
+                    var perf_hooks = require("perf_hooks");
+                    return perf_hooks.performance.now.bind(perf_hooks.performance);
+                }
+
+                if (typeof performance==='object') {
+                    if (typeof performance.now==='function') {
+                        return performance.now.bind(performance);
+                    }
+                }
+                return Date.now.bind(Date);
+            })();
+
+            (function(obj,obj2,myfunc_a,myfunc_b){if (true) return;
+                // function modeS:
+                // false - unbound global, but lives in obj[fn]
+                // eg
+                Object.a_b_test(obj,"myfunc",10,1,false, myfunc_a, myfunc_b);
+                // true      - object bound to obj, lives in obj[fn]
+                // eg
+                Object.a_b_test(obj,"myfunc",10,1,true, myfunc_a, myfunc_b);
+                // obj2 (an object instance) - bound to obj2, but lives in obj[fn]
+                // eg
+                Object.a_b_test(obj,"myfunc",10,1,obj2, myfunc_a, myfunc_b);
+                // Class (eg String) - fn resides in Class.prototype[fn], fn is applied/called ad hoc
+            })();
+
+            Object.a_b_test_logging=false;
+
+            object("a_b_test",function(obj,fn,trials,loops,mode){
+
+                if (arguments.length<6) return false;
+                if (typeof fn!=='string') return false;
+                if (["number","undefined"].indexOf(typeof trials)<0) return false;
+                if (["number","undefined"].indexOf(typeof loops)<0) return false;
+                var THIS=false,logging=Object.a_b_test_logging;
+                if (typeof obj==='object') {
+                    switch (mode) {
+                        case false : THIS=undefined;break;
+                        case true  : THIS=undefined;break;
+                        default:
+                        if (['function','undefined'].indexOf(typeof mode) <0 ) {
+                            THIS = mode; break;
+                        } else {
+                            if ((obj.constructor===mode) && (typeof mode==='function')) {
+                                THIS=undefined;
+                            }
+                        }
+                    }
+                }
+                if (THIS===false) return false;
+                var config = Object.getOwnPropertyDescriptor(obj,fn);
+                if (!config) return false;
+                if (!(config.writable && config.configurable) ) return false;
+
+                var native = obj[fn];
+
+                if (typeof native!=='function') return false;
+                trials = trials || 100;
+                loops = loops || 1;
+
+                var fns=cpArgs(arguments).slice(5);
+                if (fns.some(function(fn){return typeof fn !=='function';})) {
+                    return false;
+                }
+
+                fns.push(native);
+
+                var
+                count    = 0,
+                a_b      = 0,
+                totals   = fns.map(function(){return 0;}),
+                ab_count = fns.length,
+                obj2     = mode,
+                next_trial=function() {
+                    count++;
+                    if (count>=trials) {
+                        use_best();
+                    }
+                },
+                next = function (inc) {
+                    a_b++;
+                    if (a_b>=ab_count) {
+                        a_b=0;
+
+                    }
+                    if (inc) {
+                         next_trial();
+                    }
+                },
+                names = fns.map(function(x){return x.name;}).join(",");
+
+                function shim ()
+                {
+                    var
+                    this_=THIS||this,
+                    result,
+                    start,start_,
+                    finish,elapsed,compare,
+                    do_loops=loops,
+                    args=cpArgs(arguments),
+                    err=loops===1?false:new Error ("inconsistent results");
+                    try {
+                        start=ab_now();
+                        result=fns[a_b].apply(this_,args);
+                        finish=ab_now();
+                        elapsed=(finish-start);
+                        totals[a_b] += elapsed;
+                        if (do_loops===1){
+                            console.log("trial #"+count+": invoked",fns[a_b].name,args.length,"args returning",result,"took",elapsed.toFixed(3),"msec");
+                            next(true);
+                        } else {
+                            start_=start;
+                            next(false);
+                            while (--do_loops > 0) {
+                                start=ab_now();
+                                compare=fns[a_b].apply(this_,args);
+                                finish=ab_now();
+                                if (result!==compare){
+                                    throw err;
+                                }
+                                elapsed=(finish-start);
+                                totals[a_b] += elapsed;
+                                next(false);
+                            }
+                            elapsed = finish-start_;
+                            console.log("trial #"+count+": invoked",names,"(",args.length,"args)",loops,"times, returning",result,"took",elapsed.toFixed(3),"msec (",(elapsed/loops).toFixed(3),"msec per invoke)");
+                            next_trial();
+                        }
+
+                    } catch (e) {
+                        if (fns[a_b]!==native) {
+                            //was external a/b - abandon trials
+                            obj[fn]=native;//forced unhook
+                            return native.apply(this_,args);
+                        } else {
+                            // was native
+                            throw e;
+                        }
+                    }
+
+                    return result;
+
+                }
+
+                function shim_quiet ()
+                {
+                    var
+                    this_=THIS||this,
+                    result,
+                    start,start_,
+                    finish,elapsed,compare,
+                    do_loops=loops,
+                    args=cpArgs(arguments),
+                    err=loops===1?false:new Error ("inconsistent results");
+                    try {
+                        start=ab_now();
+                        result=fns[a_b].apply(this_,args);
+                        finish=ab_now();
+                        elapsed=(finish-start);
+                        totals[a_b] += elapsed;
+                        if (do_loops===1){
+                            next(true);
+                        } else {
+                            start_=start;
+                            next(false);
+                            while (--do_loops > 0) {
+                                start=ab_now();
+                                compare=fns[a_b].apply(this_,args);
+                                finish=ab_now();
+                                if (result!==compare){
+                                    throw err;
+                                }
+                                elapsed=(finish-start);
+                                totals[a_b] += elapsed;
+                                next(false);
+                            }
+                            elapsed = finish-start_;
+                            next_trial();
+                        }
+
+                    } catch (e) {
+                        if (fns[a_b]!==native) {
+                            //was external a/b - abandon trials
+                            obj[fn]=native;//forced unhook
+                            return native.apply(this_,args);
+                        } else {
+                            // was native
+                            throw e;
+                        }
+                    }
+
+                    return result;
+
+                }
+
+
+                function use_best() {
+                    var
+                    chr_a=97,//"a".charCodeAt(0),
+                    best=Infinity,best_ix=-1;
+                    for (var i=0;i<ab_count;i++) {
+                        if (totals[i]<best) {
+                            best=totals[i];
+                            best_ix=i;
+                        }
+                    }
+                    var average=totals[best_ix]/count;
+                    if (logging) {
+                        console.log(totals.map(function(total,ix){
+                            return {
+                                name        : fns[ix].name,
+                                total       : Number(total.toFixed(3)),
+                                per_trial   : Number((total/count).toFixed(3)),
+                                per_invoke  : Number((total/(count*loops)).toFixed(4)),
+                            };
+                        }));
+
+                        if (fns[best_ix]===native) {
+                            console.log("reverting to native mode for",fn,"after",count,"tests",average,"average msec");
+                        } else {
+                            console.log("selected mode",String.fromCharCode(chr_a+best_ix),"for",fn,"after",count,"tests",average,"average msec");
+                        }
+                    }
+                    config.value = fns[best_ix];
+                    delete obj[fn];
+                    Object.defineProperty(obj,fn,config);
+                }
+
+                config.value =logging ? shim : shim_quiet;
+                delete obj[fn];
+                Object.defineProperty(obj,fn,config);
+
+            });
+
+            object("a_b_test_async",function(obj,fn,trials,mode){
+
+                if (arguments.length<5) return false;
+                if (typeof fn!=='string') return false;
+                if (["number","undefined"].indexOf(typeof trials)<0) return false;
+                if (["number","undefined"].indexOf(typeof loops)<0) return false;
+                var THIS=false,logging=Object.a_b_test_logging;
+                if (typeof obj==='object') {
+                    switch (mode) {
+                        case false : THIS=undefined;break;
+                        case true  : THIS=undefined;break;
+                        default:
+                        if (['function','undefined'].indexOf(typeof mode) <0 ) {
+                            THIS = mode; break;
+                        } else {
+                            if ((obj.constructor===mode) && (typeof mode==='function')) {
+                                THIS=undefined;
+                            }
+                        }
+                    }
+                }
+                if (THIS===false) return false;
+                var config = Object.getOwnPropertyDescriptor(obj,fn);
+                if (!config) return false;
+                if (!(config.writable && config.configurable) ) return false;
+
+                var native = obj[fn];
+
+                if (typeof native!=='function') return false;
+                trials = trials || 100;
+
+                var fns=cpArgs(arguments).slice(4);
+                if (fns.some(function(fn){return typeof fn !=='function';})) {
+                    return false;
+                }
+
+                fns.push(native);
+
+                var
+                count    = 0,
+                a_b      = 0,
+                totals   = fns.map(function(){return 0;}),
+                ab_count = fns.length,
+                obj2     = mode,
+                next_trial=function() {
+                    count++;
+                    if (count>=trials) {
+                        use_best();
+                    }
+                },
+                next = function (inc) {
+                    a_b++;
+                    if (a_b>=ab_count) {
+                        a_b=0;
+
+                    }
+                    if (inc) {
+                         next_trial();
+                    }
+                },
+                names = fns.map(function(x){return x.name;}).join(",");
+
+
+                function shim_sync(args,this_)
+                {
+                    var
+                    result,
+                    start,start_,
+                    finish,elapsed,compare;
+
+                    try {
+                        start=ab_now();
+                        result=fns[a_b].apply(this_,args);
+                        finish=ab_now();
+                        elapsed=(finish-start);
+                        totals[a_b] += elapsed;
+
+                        console.log("trial #"+count+": invoked",fns[a_b].name,args.length,"args returning",result,"took",elapsed.toFixed(3),"msec");
+                        next(true);
+
+
+                    } catch (e) {
+                        if (fns[a_b]!==native) {
+                            //was external a/b - abandon trials
+                            obj[fn]=native;//forced unhook
+                            return native.apply(this_,args);
+                        } else {
+                            // was native
+                            throw e;
+                        }
+                    }
+
+                    return result;
+                }
+
+                function shim ()
+                {
+                    var
+                    this_=THIS||this,args=cpArgs(arguments),
+                    cb = args.length>0 && typeof args[args.length-1]==='function' ? args[args.length-1] : false;
+                    if (!cb) return shim_sync(args,this_);
+
+                    var
+                    result,
+                    start,start_,
+                    finish,elapsed,compare;
+
+                    args[args.length-1]=function() {
+                        finish=ab_now();
+                        elapsed=(finish-start);
+                        totals[a_b] += elapsed;
+                        console.log("trial #"+count+": invoked",fns[a_b].name,args.length,"args returning",result,"took",elapsed.toFixed(3),"msec");
+                        next(true);
+                        cb.apply(this_,cpArgs(arguments));
+                    };
+
+                    start=ab_now();
+                    return fns[a_b].apply(this_,args);
+                }
+
+                function shim_sync_quiet(args,this_)
+                {
+                    var
+                    result,
+                    start,start_,
+                    finish,elapsed,compare;
+
+                    try {
+                        start=ab_now();
+                        result=fns[a_b].apply(this_,args);
+                        finish=ab_now();
+                        elapsed=(finish-start);
+                        totals[a_b] += elapsed;
+
+                        next(true);
+
+
+                    } catch (e) {
+                        if (fns[a_b]!==native) {
+                            //was external a/b - abandon trials
+                            obj[fn]=native;//forced unhook
+                            return native.apply(this_,args);
+                        } else {
+                            // was native
+                            throw e;
+                        }
+                    }
+
+                    return result;
+                }
+
+                function shim_quiet ()
+                {
+                    var
+                    this_=THIS||this,args=cpArgs(arguments),
+                    cb = args.length>0 && typeof args[args.length-1]==='function' ? args[args.length-1] : false;
+                    if (!cb) return shim_sync_quiet(args,this_);
+
+                    var
+                    result,
+                    start,start_,
+                    finish,elapsed,compare;
+
+                    args[args.length-1]=function() {
+                        finish=ab_now();
+                        elapsed=(finish-start);
+                        totals[a_b] += elapsed;
+                        next(true);
+                        cb.apply(this_,cpArgs(arguments));
+                    };
+
+                    start=ab_now();
+                    return fns[a_b].apply(this_,args);
+                }
+
+                function use_best() {
+                    var
+                    chr_a=97,//"a".charCodeAt(0),
+                    best=Infinity,best_ix=-1;
+                    for (var i=0;i<ab_count;i++) {
+                        if (totals[i]<best) {
+                            best=totals[i];
+                            best_ix=i;
+                        }
+                    }
+                    var average=totals[best_ix]/count;
+                    if (logging) {
+                        console.log(totals.map(function(total,ix){
+                            return {
+                                name        : fns[ix].name,
+                                total       : Number(total.toFixed(3)),
+                                per_invoke   : Number((total/count).toFixed(3))
+                            };
+                        }));
+
+                        if (fns[best_ix]===native) {
+                            console.log("reverting to native mode for",fn,"after",count,"tests",average,"average msec");
+                        } else {
+                            console.log("selected mode",String.fromCharCode(chr_a+best_ix),"for",fn,"after",count,"tests",average,"average msec");
+                        }
+                    }
+                    config.value = fns[best_ix];
+                    delete obj[fn];
+                    Object.defineProperty(obj,fn,config);
+                }
+
+                config.value =logging ? shim : shim_quiet;
+                delete obj[fn];
+                Object.defineProperty(obj,fn,config);
+
+            });
+
+            object("a_b_test_tester",function(loops,quick){
+
+                loops=loops||1;
+
+                var logging_backup = Object.a_b_test_logging;
+                Object.a_b_test_logging=true;
+
+                var String_prototype_indexOf=String.prototype.indexOf;
+
+                var sample = quick ? "the quick brown fox jumps over the lazy dog" : require("fs").readFileSync("./words.txt","utf8");
+                var indexOfC_lookups = (function(sep){
+                    var d = {},c=0;
+                    console.log("preparing lookups...");
+                    var r,k,sampleSet = sample.split(sep);
+                    var max = Math.min(25000,sampleSet.length);
+
+                    while (c<max) {
+                        r = Math.floor(Math.random()*sampleSet.length);
+                        k = sampleSet[r];
+                        if (k) {
+                           sampleSet[r]=null;
+                           k=k.trim();
+                           d[k]=sample.indexOf(k);
+                           c++;
+                           if (c % 500 ===0) {
+                               sampleSet  = sampleSet.filter(function(x){return x!==null;});
+                               console.log("added",c,"random words, just added  [",k.padStart(20),"]",(c/(max/100)).toFixed(1),"% complete");
+
+                           }
+                        }
+                    }
+
+                    var keys= Object.keys(d),first=keys.shift(),last=keys.pop();
+                    keys.splice(0,keys.length);
+                    console.log("prepared",c,"lookups",first,"thru",last);
+                    return d;
+                })(quick ? " " : "\n");
+
+
+
+                function indexOf_a(str) {
+                    var s = this;
+                    var c = s.length,l=str.length;
+                    for (var i = 0; i < c ; i ++ ) {
+                      if (s.substr(i,l)===str) {
+                        return i;
+                        }
+                      }
+                    return -1;
+                }
+
+                function indexOf_b(str) {
+                    var s = this;
+                    var c = s.length,l=str.length;
+                    for (var i = 0; i < c ; i ++ ) {
+                      if (s.substr(i).startsWith(str)) {
+                        return i;
+                        }
+                      }
+                    return -1;
+                }
+
+                function indexOf_c(str) {
+                    var x = indexOfC_lookups[str];
+                    if (x===undefined) x = String_prototype_indexOf.call(this,str);
+                    return x;
+                }
+
+                Object.a_b_test(String.prototype,"indexOf",10,loops,String, indexOf_a, indexOf_b, indexOf_c);
+
+
+
+                for(var i = 0; i < 10; i++) {
+                    sample.indexOf("fox");
+                    sample.indexOf("jumps");
+                    sample.indexOf("notFound");
+                    sample.indexOf("abacinate");
+                    sample.indexOf("dog");
+                    sample.indexOf("lazy");
+                    sample.indexOf("quick");
+                    sample.indexOf("zebra");
+                    sample.indexOf("the");
+                }
+
+
+
+
+                var tester = {
+
+                    test : function tester_native (a,b) {
+                        return a.indexOf(b);
+                    }
+
+                };
+
+                Object.a_b_test(tester,"test",10,loops,false,
+                    function tester_testA(a,b) {
+                        return indexOf_a.call(a,b);
+                    },
+                    function tester_testB(a,b) {
+                        return indexOf_b.call(a,b);
+                    },
+                    function tester_testC(a,b) {
+                        return indexOf_c.call(a,b);
+                    }
+
+                );
+
+                for(i = 0; i < 10; i++) {
+                    tester.test(sample,"fox");
+                    tester.test(sample,"jumps");
+                    tester.test(sample,"notFound");
+                    tester.test(sample,"abacinate");
+                    tester.test(sample,"dog");
+                    tester.test(sample,"lazy");
+                    tester.test(sample,"quick");
+                    tester.test(sample,"zebra");
+                    tester.test(sample,"the");
+                }
+
+
+
+                var tester2 = {
+                    test : sample.indexOf
+                };
+
+
+                Object.a_b_test(tester2,"test",10,loops,sample,
+                    indexOf_a,
+                    indexOf_b,
+                    indexOf_c
+                );
+
+
+                for(i = 0; i < 10; i++) {
+                    tester2.test("fox");
+                    tester2.test("jumps");
+                    tester2.test("notFound");
+                    tester2.test("abacinate");
+                    tester2.test("dog");
+                    tester2.test("lazy");
+                    tester2.test("quick");
+                    tester2.test("zebra");
+                    tester2.test("the");
+                }
+
+                var tester3 = {
+                    data : sample,
+                };
+                Object.defineProperties(tester3,{
+                   test : {
+                       value : function tester3_native(str) {
+                           return this.data.indexOf(str);
+                       },
+                       configurable : true,
+                       writable: true
+                   },
+
+                   test_a : {
+                       value : function tester3_testA(str) {
+                           return indexOf_a.call(this.data,str);
+                       }
+                   },
+                   test_b : {
+                       value : function tester3_testB(str) {
+                           return indexOf_b.call(this.data,str);
+                       }
+                   },
+                   test_c : {
+                       value : function tester3_testC(str) {
+                           return indexOf_c.call(this.data,str);
+                       }
+                   }
+                });
+
+
+                Object.a_b_test(tester3,"test",10,loops,true,
+                    tester3.test_a,
+                    tester3.test_b,
+                    tester3.test_c
+                );
+
+
+
+                for(i = 0; i < 10; i++) {
+                    tester3.test("fox");
+                    tester3.test("jumps");
+                    tester3.test("notFound");
+                    tester3.test("abacinate");
+                    tester3.test("dog");
+                    tester3.test("lazy");
+                    tester3.test("quick");
+                    tester3.test("zebra");
+                    tester3.test("the");
+                }
+
+                Object.a_b_test_logging =logging_backup;
+
+            });
+
+            object("a_b_test_async_tester",function(trials){
+
+                trials=trials||10;
+                var logging_backup = Object.a_b_test_logging;
+                Object.a_b_test_logging=true;
+
+                var fs= require("fs");
+
+                var readFileNative = fs.readFile.bind(fs);
+
+                function readFile_a () {
+                    var delay = Math.floor(100+(Math.random()*900));
+                    var args=[readFileNative,delay].concat(cpArgs(arguments));
+                    return setTimeout.apply (global,args);
+                }
+
+                var count = trials+10;
+
+                function afterRead(err,data){
+                    console.log({afterRead:{err:err,
+                            data:typeof data,
+                            length:data?data.length:undefined,
+                            count:count
+                    }});
+                    if (!err && data.indexOf("fs.readFile")>0) {
+
+
+
+                        if (count-->0) {
+                           console.log("looping");
+                           fs.readFile(__filename,"utf8",afterRead);
+                        } else {
+                            Object.a_b_test_logging =logging_backup;
+                        }
+
+                    } else {
+                        console.log("???");
+                    }
+                }
+
+
+                fs.readFile(__filename,"utf8",function(err,data){
+
+                    console.log({err:err,
+                            data:typeof data,
+                            length:data?data.length:undefined
+                    });
+
+
+                    if (!err && data.indexOf("fs.readFile")>0) {
+
+                        console.log("native fs.readFile looks ok");
+
+                        readFile_a(__filename,"utf8",function(err,data){
+
+                            console.log({readFile_a:{err:err,
+                                    data:typeof data,
+                                    length:data?data.length:undefined
+                            }});
+
+                            if (!err && data.indexOf("fs.readFile")>0) {
+
+                                console.log("delayed fs.readFile stub looks ok");
+
+                                Object.a_b_test_async(
+                                    fs,"readFile",trials,true,
+                                    readFile_a.bind(fs)
+                                );
+
+                                fs.readFile(__filename,"utf8",afterRead);
+
+
+                            }
+                        });
+                    }
+
+
+                });
+
+
+            });
+
+        }
+
         function trimTopTail(s) {return s.substr(1,s.length-2);}
 
         function stringifyPathNode(n) {
@@ -2838,12 +2844,35 @@ var inclusionsBegin;
             function camelCaseArray(a){return a.map(camelCaseWord).join('');}
 
             /* splits the supplied string with embedded spaces to each word camleCased  in a single word*/
-            function camelCaseWords(s){return camelCaseArray(s.replace(/-|\./g," ").split(" ").filter(function(x){return x!=='';}));}
+            function camelCaseWords(s){return camelCaseArray(s.replace(/-|\/|\+|_|\./g," ").split(" ").filter(function(x){return x!=='';}));}
 
             string.prototype("toCamelCase",function toCamelCase() {
                 return camelCaseWords(this);
             });
 
+            function sha1Browser() {
+
+                return typeof window.sha1==='function' ? sha1Wrap : undefined;
+
+                function sha1Wrap(str,cb) {
+                    var hex = window.sha1(str);
+                    return (typeof cb==='function') ? cb(hex) : hex;
+                }
+
+            }
+
+            function sha1Node () {
+                var crypto = require('crypto');
+                return function sha1 (str,cb) {
+                      var shasum = crypto.createHash('sha1');
+                      shasum.update(str);
+                      var hex = shasum.digest('hex');
+                      return typeof cb==='function' ? setImmediate(cb,hex) : hex;
+                };
+            }
+
+            string("sha1", Object.env.isNode ? sha1Node() : sha1Browser());
+            string.prototype("sha1",function getSha1(){return  String.sha1(""+this); });
 
 
             string("htmlGenerator",function htmlGenerator(template) {
@@ -2976,7 +3005,7 @@ var inclusionsBegin;
 
                         return allProps;
                     }
-                    function zap(prefix,obj) {
+                    function zapRegExp(prefix,obj) {
                         getAllProperties(obj).forEach(function(key){
                             var
                             re = new RegExp('\\$\\{'+escapeRegExp(prefix)+key+'\\}','g'),
@@ -2994,6 +3023,26 @@ var inclusionsBegin;
                                         temp=temp.replace(re,val);
                                     }
                                 }
+                            }
+                        });
+                    }
+                    function zap(prefix,obj) {
+                        getAllProperties(obj).forEach(function(key){
+                            var
+                            splitter = '${'+prefix+key+'}',
+                            val=obj[key];
+                            if (typeof val === 'object') {
+                                if (val!==null) zap(prefix+key+".",val);
+                            } else {
+                                var splits = temp.split(splitter);
+                                if (splits.length>1) {
+                                    if (typeof val === 'function') {
+                                        temp=splits.join(val.apply(obj,[temp,ix,template]));
+                                    } else {
+                                        temp=splits.join(val);
+                                    }
+                                }
+
                             }
                         });
                     }
@@ -3998,7 +4047,7 @@ var inclusionsBegin;
             string.prototype("indentLevel",function indentLevel(lines,tabs,reindent){
                 var i;
                 if (!!lines) {
-                    lines=this.lines;
+                    lines=this.replace(/\r/g,'').lines;
                     if (reindent) {
                         return lines.map(function(line){return line.indentLevel(false,tabs,true);}).join("\n");
                     }
@@ -4036,22 +4085,22 @@ var inclusionsBegin;
                 return reindent ? new Array(1+chars).join(" ")+remain  : chars;
             });
 
-            string.prototype("reindent",function indent(spaces,tabs,nl){
-                var current = this.indentLevel(true,tabs);
+            string.prototype("reindent",function reindent(spaces,tabs,nl){
+                var current = this.indentLevel(true,tabs||4);
                 if (current===spaces) return String(this);
                 var
                 filler = new Array(1+spaces).join(" ");
                 nl=nl||"\n";
-                return this.indentLevel(true,tabs,true).split(nl).map(function(line){
+                return this.indentLevel(true,tabs||4,true).split(nl).map(function(line){
                     return filler + line.substr(current);
                 }).join(nl);
             });
 
-            string.prototype("load",function indent(filename){
+            string.prototype("load",function load(filename){
                 return require("fs").readFileSync(filename,"utf8");
             });
 
-            string("load",function indent(filename){
+            string("load",function load(filename){
                 return require("fs").readFileSync(filename,"utf8");
             });
 
@@ -5187,10 +5236,33 @@ var inclusionsBegin;
 
                 }
             });
+            func("browserInternalRequire",(function(){
+            var cache={},
+                factories={
+                    util : getUtil
+                };
+                function browserInternalRequire(mod){
+                    if (cache[mod]) return cache[mod];
+                    if (!!factories[mod]) return (cache[mod]=factories[mod]());
+                }
+                browserInternalRequire.resolve= function browserInternalResolve(mod){
+                    return factories[mod]||false;
+                };
+
+                return browserInternalRequire;
+            })());
 
         }
 
-        Date_toJSON();
+        function Module_extensions(mod) {
+            if (Object.env.isNode){
+
+                mod.prototype("exportSimulation",require("./require_simulator.js").render);
+
+            }
+        }
+
+
 
 
     },
@@ -5199,15 +5271,13 @@ var inclusionsBegin;
     /*isNode=*/
     (
         (!!Object.env && Object.env.isNode) ||
-        (
-            !!Object.polyfills ||
-
-            ( typeof process==='object' &&
-              typeof module==='object' &&
-              typeof require==='function' &&
-              !!require("jspolyfills")
-            )
+        
+        ( typeof process==='object' &&
+          typeof module==='object' &&
+          typeof require==='function' &&
+          !!require("jspolyfills")
         )
+
     )
 );
 

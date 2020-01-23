@@ -8,6 +8,8 @@
     "description": "javascript extensions and polyfills used by various projects",
     "license": "MIT",
     "dependencies": {
+        "browser-path": "npm:path@^0.12.7",
+        "browser-util": "npm:util@^0.12.1",
         "express": "^4.17.1",
         "express-ws": "^4.0.0",
         "jspolyfills": "github:jonathan-annett/jspolyfills#a858c4dc5bf9e0fc6c68d118cd98a3699326f3e4"
