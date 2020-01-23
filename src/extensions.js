@@ -44,6 +44,7 @@ var inclusionsBegin;
         extend(Array,Array_extensions);
         extend(String,String_extensions);
         extend(Function,Function_extensions);
+
         if (Object.env.isNode) {
             extend(require("module").Module,Module_extensions);
         }
@@ -2852,7 +2853,7 @@ var inclusionsBegin;
 
             function sha1Browser() {
 
-                return typeof window.sha1==='function' ? sha1Wrap : undefined;
+                return typeof window.sha1==='function' ? sha1Wrap : function(){};
 
                 function sha1Wrap(str,cb) {
                     var hex = window.sha1(str);
@@ -5271,7 +5272,7 @@ var inclusionsBegin;
     /*isNode=*/
     (
         (!!Object.env && Object.env.isNode) ||
-        
+
         ( typeof process==='object' &&
           typeof module==='object' &&
           typeof require==='function' &&

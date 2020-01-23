@@ -132,20 +132,31 @@ module.exports = function(WS_PATH,ws_static_path,WS_PORT,cpArgs,ext_path) {
         load ("jspolyfills","http:","somehost",function(got_src){
             console.log({got_src:got_src});
             var
-            pf_path = Object.keys(statics)[0],
-            pf_url  = ws_static_path+"polyfills.js",
-            ext_url = ws_static_path+'extensions.js';
+            pf_path      = Object.keys(statics)[0],
+            pf_url       = ws_static_path+"polyfills.js",
+            ext_url      = ws_static_path+'extensions.js',
+            pf_min_url   = ws_static_path+"polyfills.min.js",
+            ext_min_url  = ws_static_path+'extensions.min.js',
+            pf_min_path  = node.path.join(node.path.dirname(pf_path),"polyfills.min.js"),
+            ext_min_path = node.path.join(node.path.dirname(ext_path),"polyfills.min.js");
 
-            statics[pf_path]  = pf_url;
-            statics[ext_path] = ext_url;
+            statics[pf_path]      = pf_url;
+            statics[ext_path]     = ext_url;
+            statics[pf_min_path]  = pf_min_url;
+            statics[ext_min_path] = ext_min_url;
 
             if (main_app) {
-                main_app.use (pf_url,  node.express.static(pf_path) );
-                main_app.use (ext_url, node.express.static(ext_path) );
+                main_app.use (pf_url,      node.express.static(pf_path) );
+                main_app.use (ext_url,     node.express.static(ext_path) );
+                main_app.use (pf_min_url,  node.express.static(pf_min_path) );
+                main_app.use (ext_min_url, node.express.static(ext_min_path) );
             }
 
             app.use(pf_url,node.express.static(pf_path));
             app.use(ext_url,node.express.static(ext_path));
+            app.use (pf_min_url,  node.express.static(pf_min_path) );
+            app.use (ext_min_url, node.express.static(ext_min_path) );
+
             console.log("jspolyfills,jsextensions loaded. available from",Object.values(statics));
         });
 
