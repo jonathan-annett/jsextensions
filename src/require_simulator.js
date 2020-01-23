@@ -46,9 +46,9 @@ function requireSimModule() {
            });
            if (result.code) return result.code;
 
-           result = babel.transform(js_src,{minified:true,shouldPrintComment:function(comment){
-               return comment.search(/(copyright|license|permission)/ig)>=0;
-           }});
+           result = babel.transform(js_src,{minified:true});
+
+           
           return result.code;
         },
         vm = require('vm');

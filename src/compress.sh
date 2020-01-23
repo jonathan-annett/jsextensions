@@ -2,6 +2,7 @@
 echo "compressing extensions.js to extensions.min.js"
 echo "/* jshint ignore:start */" > ./extensions.min.js
 uglifyjs extensions.js -c >> ./extensions.min.js
+node -e 'console.log(JSON.parse(require("fs").readFileSync("./require_simulator.json","utf-8")).pkg.min_src);' >> ./extensions.min.js
 echo "/* jshint ignore:end */" >> ./extensions.min.js
 cd ..
 if [[ "$1" == "push" ]]; then
