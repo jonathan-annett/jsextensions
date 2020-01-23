@@ -4,6 +4,8 @@ module.exports = function(WS_PATH,ws_static_path,WS_PORT,cpArgs,ext_path) {
 
 
     var
+    // returns false if module is not available
+    // othwewise returns path to the main javascript file
     nodeGetPath=function (mod) {
         try {
             return require.resolve(mod);
@@ -11,6 +13,9 @@ module.exports = function(WS_PATH,ws_static_path,WS_PORT,cpArgs,ext_path) {
             return false;
         }
     },
+    // if the last argument of a function call is a callback, it gets replaced
+    // with [{cb:null}] in the transmitted json
+    // this is basically a stripped down "tabcalls" concept, used as a bootloader
     isCBToken=function(CB) {
         return Array.isArray(CB) &&
         CB.length===1&&
@@ -24,13 +29,11 @@ module.exports = function(WS_PATH,ws_static_path,WS_PORT,cpArgs,ext_path) {
 
         var node = {
             express : require('express'),
-            path : require("path")
-
+            path    : require("path")
         };
 
         var app = node.express();
         var expressWs = require('express-ws')(app);
-
 
         var statics = {};
         var cached  = {};
@@ -83,47 +86,6 @@ module.exports = function(WS_PATH,ws_static_path,WS_PORT,cpArgs,ext_path) {
         }
 
 
-        app.ws(WS_PATH, function(ws, req) {
-
-          ws.on('message', function(msg) {
-
-            var payload
-            try {
-                payload = JSON.parse(msg);
-            } catch (e) {
-                console.log({error_parsing:{msg:msg,error:e}});
-            }
-            var fn = {
-                load : load
-            }[payload.fn];
-
-            if (fn) {
-                var
-                ID=payload.id,
-                ARGS_IN=payload.args;
-
-                if ( typeof ID==='string' &&
-
-                     isCBToken(ARGS_IN[ARGS_IN.length-1]) ) {
-
-                     ARGS_IN[ARGS_IN.length-1]=function () {
-                        var ARGS_OUT = cpArgs(arguments);
-                        ws.send (JSON.stringify({id:ID,args:ARGS_OUT}));
-                     };
-
-                }
-
-                fn.apply(this,ARGS_IN);
-            } else {
-
-            }
-
-          });
-        });
-
-        app.listen(WS_PORT,cb);
-
-
 
         // we need to manually bootstrap the server for the polyfills and extensions files.
         // mainly as they are on a different port.
@@ -138,7 +100,7 @@ module.exports = function(WS_PATH,ws_static_path,WS_PORT,cpArgs,ext_path) {
             pf_min_url   = ws_static_path+"polyfills.min.js",
             ext_min_url  = ws_static_path+'extensions.min.js',
             pf_min_path  = node.path.join(node.path.dirname(pf_path),"polyfills.min.js"),
-            ext_min_path = node.path.join(node.path.dirname(ext_path),"polyfills.min.js");
+            ext_min_path = node.path.join(node.path.dirname(ext_path),"extensions.min.js");
 
             statics[pf_path]      = pf_url;
             statics[ext_path]     = ext_url;
@@ -158,6 +120,47 @@ module.exports = function(WS_PATH,ws_static_path,WS_PORT,cpArgs,ext_path) {
             app.use (ext_min_url, node.express.static(ext_min_path) );
 
             console.log("jspolyfills,jsextensions loaded. available from",Object.values(statics));
+
+            app.ws(WS_PATH, function(ws, req) {
+
+              ws.on('message', function(msg) {
+
+                var payload
+                try {
+                    payload = JSON.parse(msg);
+                } catch (e) {
+                    console.log({error_parsing:{msg:msg,error:e}});
+                }
+                var fn = {
+                    load : load
+                }[payload.fn];
+
+                if (fn) {
+                    var
+                    ID=payload.id,
+                    ARGS_IN=payload.args;
+
+                    if ( typeof ID==='string' &&
+
+                         isCBToken(ARGS_IN[ARGS_IN.length-1]) ) {
+
+                         ARGS_IN[ARGS_IN.length-1]=function () {
+                            var ARGS_OUT = cpArgs(arguments);
+                            ws.send (JSON.stringify({id:ID,args:ARGS_OUT}));
+                         };
+
+                    }
+
+                    fn.apply(this,ARGS_IN);
+                } else {
+
+                }
+
+              });
+              
+            });
+
+            app.listen(WS_PORT,cb);
         });
 
         return {
