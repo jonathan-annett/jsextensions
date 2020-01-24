@@ -53,8 +53,10 @@ var inclusionsBegin;
         extend(Array,Array_extensions);
         extend(String,String_extensions);
         extend(Function,Function_extensions);
-        extend(require("module"),Module_extensions);
-        fs_extensions();
+        if (Object.env.isNode) {
+            extend(require("module"),Module_extensions);
+            fs_extensions();
+        }
 
 
         if (Object.env.isNode && process.argv.indexOf("--Function.startServer")>0) { Function.startServer(); }

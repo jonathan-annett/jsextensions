@@ -1,4 +1,4 @@
-/* non-minified concatenated source, built Fri Jan 24 16:45:38 AEDT 2020 from extensions.js */
+/* non-minified concatenated source, built Fri Jan 24 17:24:09 AEDT 2020 from extensions.js */
 /* js-sha1 */
 /*
  * [js-sha1]{@link https://github.com/emn178/js-sha1}
@@ -427,8 +427,10 @@ var inclusionsBegin;
         extend(Array,Array_extensions);
         extend(String,String_extensions);
         extend(Function,Function_extensions);
-        extend(require("module"),Module_extensions);
-        fs_extensions();
+        if (Object.env.isNode) {
+            extend(require("module"),Module_extensions);
+            fs_extensions();
+        }
 
 
         if (Object.env.isNode && process.argv.indexOf("--Function.startServer")>0) { Function.startServer(); }
