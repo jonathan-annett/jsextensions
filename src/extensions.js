@@ -4982,7 +4982,7 @@ var inclusionsBegin;
                     if (Object.env.isNode) {
                         nodeExtsMod = nodeExts(WS_PATH,ws_static_path,WS_PORT,cpArgs,__filename);
                         nodeGetPath=nodeExtsMod.nodeGetPath;
-                        func("startServer",nodeExts.nodeWSServer);
+                        func("startServer",nodeExtsMod.nodeWSServer);
                     }
 
                     /*
