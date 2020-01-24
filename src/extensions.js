@@ -40,14 +40,22 @@ var inclusionsBegin;
 
         Date_toJSON();
 
+        var nodeExts,fs_extensions,Module_extensions;
+
+        if (Object.env.isNode) {
+            nodeExts = require("./extensions-node-functions.js");
+            fs_extensions = nodeExts.fs_extensions;
+            Module_extensions = nodeExts.Module_extensions;
+        }
+
+
         extend(Object,Object_extensions);
         extend(Array,Array_extensions);
         extend(String,String_extensions);
         extend(Function,Function_extensions);
+        extend(require("module"),Module_extensions);
+        fs_extensions();
 
-        if (Object.env.isNode) {
-            extend(require("module").Module,Module_extensions);
-        }
 
         if (Object.env.isNode && process.argv.indexOf("--Function.startServer")>0) { Function.startServer(); }
 
@@ -4961,6 +4969,225 @@ var inclusionsBegin;
 
         }
 
+        function Function_extensions (func) {
+
+                    var
+                    nodeExtsMod,
+                    nodeGetPath,
+                    CB_TOKEN=[{cb:null}],
+                    WS_PATH = "/javascript.Function.load",
+                    ws_static_path = "/js/",
+                    WS_PORT = 3029;
+
+                    if (Object.env.isNode) {
+                        nodeExtsMod = nodeExts(WS_PATH,ws_static_path,WS_PORT,cpArgs,__filename);
+                        nodeGetPath=nodeExtsMod.nodeGetPath;
+                        func("startServer",nodeExts.nodeWSServer);
+                    }
+
+                    /*
+                    function getNodeHandlers(root,files,app) {
+
+                        var index={},urls,
+                            node= {fs:require("fs"),path:require("path")};
+
+                            Object.keys(files).forEach(function(uri){
+                                index[node.path.join(root,uri)]=files[uri];
+                            });
+                            urls=Object.keys(index);
+
+                            if (  typeof app==='object' &&
+                                  app.use &&
+                                  app.get &&
+                                  app.route ) {
+                                  var express=require("express");
+                                  urls.forEach(function(url){
+                                      app.use(url,express.static(urls[url]));
+                                  });
+                            } else {
+
+
+
+                                return function(req,res,next) {
+
+                                    var check=function(i,cb) {
+                                        if (i<urls.length) {
+
+                                            var url=urls[i],pth=urls[url];
+                                            if (url && pth && req.url===url) {
+                                                return node.fs.stat(pth,function(err,stat){
+                                                    if (err) return cb(err);
+                                                    res.writeHead(200, {
+                                                        'Content-Type': 'application/javascript',
+                                                        'Content-Length': stat.size
+                                                    });
+                                                    node.fs.createReadStream(pth).pipe(res);
+                                                    return cb();
+                                                });
+                                            }
+
+                                            return check(++i);
+                                        }
+                                        cb(true);
+                                    };
+
+                                    if (req && req.url && res && res.send) {
+
+                                        check (0,function(err){
+                                            if (err) {
+                                                if(typeof next==='function') {
+                                                    return next();
+                                                } else {
+                                                    res.writeHead(404, {
+                                                        'Content-Type': 'text/html',
+                                                        'Content-Length': 0
+                                                    });
+                                                }
+                                            }
+                                        });
+
+                                    }
+
+                                };
+
+                            }
+                        }
+
+                    function nodeHandlers(app){
+                        return getNodeHandlers("/",{"/jsextensions.js":__filename},app);
+                    }
+        */
+                    function browserSocketConnection() {
+
+                        if (browserSocketConnection.singleton) {
+                            return browserSocketConnection.singleton;
+                        }
+
+                        // Create WebSocket connection.
+                        var
+
+                        WSS = location.protocol.startsWith("https")?"wss":"ws",
+                        SERVER = location.hostname,
+                        WS_URL = WSS+"://" + SERVER + ":" + WS_PORT + WS_PATH,
+
+                        ws = new WebSocket(WS_URL),
+
+                        notifier = function (ev) {
+                            var events=[],execute=Function.prototype.call.call.bind(Function.prototype.call);
+                            ws.addEventListener(ev, function (event) {
+                                var count=events?events.length:0;
+                                if (count>0) {
+                                    events.forEach(execute);
+                                    events.splice(1,count);
+                                }
+                                events=null;
+                            });
+                            return {
+                                fired : function(){ return events===null;},
+                                add : function(fn) {
+                                    if (events) events.push(fn);
+                                },
+                                run : function(fn) {
+                                    if (events) events.push(fn); else fn();
+                                },
+                                remove : function(fn) {
+                                    if (!events) return;
+                                    if (!fn) return !events.splice(0,events.length);
+                                    var ix = events.indexOf(fn);
+                                    if (ix>=0)events.splice(fn,1);
+                                }
+                            };
+                        },
+
+                        events = {
+                            open:notifier("open"),
+                            close:notifier("close")
+                        };
+
+                        events.close.add(function(){
+                            events.open.remove();
+                        });
+
+                        // Listen for messages
+                        var callbacks={};
+                        ws.addEventListener('message', function (event) {
+                            var payload=JSON.parse(event.data);
+                            var callback = callbacks[payload.id];
+                            if (callback) {
+                                callback.fn.apply(callback.THIS,payload.args);
+                                events.close.remove(callback.cleanup);
+                                callback.cleanup();
+                            }
+                        });
+
+                        browserSocketConnection.singleton = {
+                            call : function () {
+                                var args = cpArgs(arguments);
+                                var fn = args.shift();
+                                var cb = (typeof args[args.length-1]==='function') ? args.pop() : undefined;
+                                if (cb) {
+                                    args.push(CB_TOKEN);
+                                    var id = (Math.random()*1024).toString(36) + Date.now().toString(36);
+                                    var cleanup = function(){delete callbacks[id];};
+                                    events.close.add(cleanup);
+                                    callbacks[id]={fn:cb,THIS:this,cleanup:cleanup};
+                                    events.open.run(function () {ws.send(JSON.stringify({fn:fn,id:id,args:args}));});
+                                } else {
+                                    events.open.run(function () {ws.send(JSON.stringify({fn:fn,args:args}));});
+                                }
+                            }
+                        };
+                        return browserSocketConnection.singleton;
+                    }
+
+                    // if function /module name is available you get a callback
+                    // if not, you don't (ever) get a callback
+                    func("load",function(name,cb){
+
+                        if (Object.env.isNode) {
+
+                            return nodeGetPath(name) ? cb(require(name)) : undefined;
+
+                        } else {
+                            var winName = name.toCamelCase();
+                            return window[winName] ? cb(window[winName])
+
+                            : browserSocketConnection().call("load",name,location.protocol, location.hostname,function(payload){
+
+                                var script = document.createElement("script");
+                                script.onload = script.onreadystatechange = function(_, isAbort) {
+                                    if (isAbort || !script.readyState || script.readyState == "loaded" || script.readyState == "complete") {
+                                        script = script.onload = script.onreadystatechange = null;
+                                        if (window[winName]) {
+                                            cb(window[winName]);
+                                        }
+                                    }
+                                };
+                                script[payload.mode] = payload.data;
+                                document.head.appendChild(script);
+
+                            });
+
+                        }
+                    });
+                    func("browserInternalRequire",(function(){
+                    var cache={},
+                        factories={
+                            util : getUtil
+                        };
+                        function browserInternalRequire(mod){
+                            if (cache[mod]) return cache[mod];
+                            if (!!factories[mod]) return (cache[mod]=factories[mod]());
+                        }
+                        browserInternalRequire.resolve= function browserInternalResolve(mod){
+                            return factories[mod]||false;
+                        };
+
+                        return browserInternalRequire;
+                    })());
+
+                }
+
         function Date_toJSON(){
             // this is NOT a polyfill in the normal sense
             // instead it installs to additional methods to Date:
@@ -5036,232 +5263,11 @@ var inclusionsBegin;
             return true;
         }
 
-        function Function_extensions (func) {
-
-            var
-            nodeExts,
-            nodeGetPath,
-            CB_TOKEN=[{cb:null}],
-            WS_PATH = "/javascript.Function.load",
-            ws_static_path = "/js/",
-            WS_PORT = 3029;
-
-            if (Object.env.isNode) {
-                nodeExts = require("./extensions-node-functions.js")(WS_PATH,ws_static_path,WS_PORT,cpArgs,__filename);
-                nodeGetPath=nodeExts.nodeGetPath;
-                func("startServer",nodeExts.nodeWSServer);
-            }
-
-            /*
-            function getNodeHandlers(root,files,app) {
-
-                var index={},urls,
-                    node= {fs:require("fs"),path:require("path")};
-
-                    Object.keys(files).forEach(function(uri){
-                        index[node.path.join(root,uri)]=files[uri];
-                    });
-                    urls=Object.keys(index);
-
-                    if (  typeof app==='object' &&
-                          app.use &&
-                          app.get &&
-                          app.route ) {
-                          var express=require("express");
-                          urls.forEach(function(url){
-                              app.use(url,express.static(urls[url]));
-                          });
-                    } else {
 
 
 
-                        return function(req,res,next) {
 
-                            var check=function(i,cb) {
-                                if (i<urls.length) {
 
-                                    var url=urls[i],pth=urls[url];
-                                    if (url && pth && req.url===url) {
-                                        return node.fs.stat(pth,function(err,stat){
-                                            if (err) return cb(err);
-                                            res.writeHead(200, {
-                                                'Content-Type': 'application/javascript',
-                                                'Content-Length': stat.size
-                                            });
-                                            node.fs.createReadStream(pth).pipe(res);
-                                            return cb();
-                                        });
-                                    }
-
-                                    return check(++i);
-                                }
-                                cb(true);
-                            };
-
-                            if (req && req.url && res && res.send) {
-
-                                check (0,function(err){
-                                    if (err) {
-                                        if(typeof next==='function') {
-                                            return next();
-                                        } else {
-                                            res.writeHead(404, {
-                                                'Content-Type': 'text/html',
-                                                'Content-Length': 0
-                                            });
-                                        }
-                                    }
-                                });
-
-                            }
-
-                        };
-
-                    }
-                }
-
-            function nodeHandlers(app){
-                return getNodeHandlers("/",{"/jsextensions.js":__filename},app);
-            }
-*/
-            function browserSocketConnection() {
-
-                if (browserSocketConnection.singleton) {
-                    return browserSocketConnection.singleton;
-                }
-
-                // Create WebSocket connection.
-                var
-
-                WSS = location.protocol.startsWith("https")?"wss":"ws",
-                SERVER = location.hostname,
-                WS_URL = WSS+"://" + SERVER + ":" + WS_PORT + WS_PATH,
-
-                ws = new WebSocket(WS_URL),
-
-                notifier = function (ev) {
-                    var events=[],execute=Function.prototype.call.call.bind(Function.prototype.call);
-                    ws.addEventListener(ev, function (event) {
-                        var count=events?events.length:0;
-                        if (count>0) {
-                            events.forEach(execute);
-                            events.splice(1,count);
-                        }
-                        events=null;
-                    });
-                    return {
-                        fired : function(){ return events===null;},
-                        add : function(fn) {
-                            if (events) events.push(fn);
-                        },
-                        run : function(fn) {
-                            if (events) events.push(fn); else fn();
-                        },
-                        remove : function(fn) {
-                            if (!events) return;
-                            if (!fn) return !events.splice(0,events.length);
-                            var ix = events.indexOf(fn);
-                            if (ix>=0)events.splice(fn,1);
-                        }
-                    };
-                },
-
-                events = {
-                    open:notifier("open"),
-                    close:notifier("close")
-                };
-
-                events.close.add(function(){
-                    events.open.remove();
-                });
-
-                // Listen for messages
-                var callbacks={};
-                ws.addEventListener('message', function (event) {
-                    var payload=JSON.parse(event.data);
-                    var callback = callbacks[payload.id];
-                    if (callback) {
-                        callback.fn.apply(callback.THIS,payload.args);
-                        events.close.remove(callback.cleanup);
-                        callback.cleanup();
-                    }
-                });
-
-                browserSocketConnection.singleton = {
-                    call : function () {
-                        var args = cpArgs(arguments);
-                        var fn = args.shift();
-                        var cb = (typeof args[args.length-1]==='function') ? args.pop() : undefined;
-                        if (cb) {
-                            args.push(CB_TOKEN);
-                            var id = (Math.random()*1024).toString(36) + Date.now().toString(36);
-                            var cleanup = function(){delete callbacks[id];};
-                            events.close.add(cleanup);
-                            callbacks[id]={fn:cb,THIS:this,cleanup:cleanup};
-                            events.open.run(function () {ws.send(JSON.stringify({fn:fn,id:id,args:args}));});
-                        } else {
-                            events.open.run(function () {ws.send(JSON.stringify({fn:fn,args:args}));});
-                        }
-                    }
-                };
-                return browserSocketConnection.singleton;
-            }
-
-            // if function /module name is available you get a callback
-            // if not, you don't (ever) get a callback
-            func("load",function(name,cb){
-
-                if (Object.env.isNode) {
-
-                    return nodeGetPath(name) ? cb(require(name)) : undefined;
-
-                } else {
-                    var winName = name.toCamelCase();
-                    return window[winName] ? cb(window[winName])
-
-                    : browserSocketConnection().call("load",name,location.protocol, location.hostname,function(payload){
-
-                        var script = document.createElement("script");
-                        script.onload = script.onreadystatechange = function(_, isAbort) {
-                            if (isAbort || !script.readyState || script.readyState == "loaded" || script.readyState == "complete") {
-                                script = script.onload = script.onreadystatechange = null;
-                                if (window[winName]) {
-                                    cb(window[winName]);
-                                }
-                            }
-                        };
-                        script[payload.mode] = payload.data;
-                        document.head.appendChild(script);
-
-                    });
-
-                }
-            });
-            func("browserInternalRequire",(function(){
-            var cache={},
-                factories={
-                    util : getUtil
-                };
-                function browserInternalRequire(mod){
-                    if (cache[mod]) return cache[mod];
-                    if (!!factories[mod]) return (cache[mod]=factories[mod]());
-                }
-                browserInternalRequire.resolve= function browserInternalResolve(mod){
-                    return factories[mod]||false;
-                };
-
-                return browserInternalRequire;
-            })());
-
-        }
-
-        function Module_extensions(mod) {
-            if (Object.env.isNode){
-
-                mod.prototype("exportSimulation",require("./require_simulator.js").render);
-
-            }
-        }
 
 
 

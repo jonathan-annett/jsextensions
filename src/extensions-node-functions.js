@@ -23,6 +23,9 @@ module.exports = function(WS_PATH,ws_static_path,WS_PORT,cpArgs,ext_path) {
         CB[0].cb===null;
     };
 
+
+
+
     function nodeWSServer(main_app,cb) {
 
         if (!nodeGetPath('express') || !nodeGetPath ('express-ws')) return false;
@@ -157,7 +160,7 @@ module.exports = function(WS_PATH,ws_static_path,WS_PORT,cpArgs,ext_path) {
                 }
 
               });
-              
+
             });
 
             app.listen(WS_PORT,cb);
@@ -177,3 +180,61 @@ module.exports = function(WS_PATH,ws_static_path,WS_PORT,cpArgs,ext_path) {
     };
 
 };
+
+
+function Module_extensions(mod) {
+    if (Object.env.isNode){
+
+        mod.prototype("exportSimulation",require("./require_simulator.js").render);
+
+    }
+}
+
+function fs_extensions () {
+    var path = require("path"),fs=require("fs");
+
+    function readdirSync () {
+        if (fs.readdirSync.__native!==undefined) return;
+
+        function readdirSync_custom(outer_dir,options) {
+            if (!options || !options.recursive) return fs.readdirSync.__native(outer_dir,options);
+
+            var flat = [];
+
+            options = options || {};
+            options.withFileTypes=true;
+            function parse(dir,root) {
+                var top = fs.readdirSync.__native(dir,options);
+
+                top.forEach(function(file){
+                    var here = path.join(root,file.name);
+                    if (file.isDirectory()) {
+                        parse( path.join(outer_dir,here),here);
+                    } else {
+                        flat.push(here);
+                    }
+                });
+            }
+
+            parse(outer_dir,'');
+
+            return flat;
+
+        }
+
+        readdirSync_custom.__native = fs.readdirSync;
+        delete fs.readdirSync;
+        Object.defineProperties(fs,{
+            readdirSync : {value : readdirSync_custom, enumerable:true,configurable:true }
+        });
+    }
+
+    readdirSync () ;
+
+
+}
+
+module.exports.Module_extensions = Module_extensions;
+module.exports.fs_extensions = fs_extensions;
+
+
