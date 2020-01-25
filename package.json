@@ -17,7 +17,7 @@
         "express": "^4.17.1",
         "express-ws": "^4.0.0",
         "js-sha1": "^0.6.0",
-        "jspolyfills": "github:jonathan-annett/jspolyfills#a5a4cc21df479126e87aaec06c42f21265ad2a1c",
+        "jspolyfills": "github:jonathan-annett/jspolyfills#9afd5f22fe061c5a5a42576407254e828a979b00",
         "uglify-js": "^3.7.2"
     },
     "devDependencies": {},

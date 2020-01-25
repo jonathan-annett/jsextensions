@@ -55,7 +55,7 @@ var inclusionsBegin;
         extend(Function,Function_extensions);
         if (Object.env.isNode) {
             extend(require("module"),Module_extensions);
-            fs_extensions();
+            extend('fs',fs_extensions);
         }
 
 

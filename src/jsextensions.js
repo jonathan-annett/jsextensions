@@ -1,4 +1,4 @@
-/* non-minified concatenated source, built Fri Jan 24 17:24:09 AEDT 2020 from extensions.js */
+/* non-minified concatenated source, built Sat Jan 25 11:20:23 AEDT 2020 from extensions.js */
 /* js-sha1 */
 /*
  * [js-sha1]{@link https://github.com/emn178/js-sha1}
@@ -429,7 +429,7 @@ var inclusionsBegin;
         extend(Function,Function_extensions);
         if (Object.env.isNode) {
             extend(require("module"),Module_extensions);
-            fs_extensions();
+            extend('fs',fs_extensions);
         }
 
 
