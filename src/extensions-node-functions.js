@@ -189,6 +189,10 @@ function Module_extensions(mod) {
 
 function fs_extensions (fs) {
     var path = require("path");// used by readdirSync
+    
+    
+    
+    
     /*with readdirSync honors 'recursive:true' option*/
     function readdirSync(outer_dir,options) {
         if (!options || !options.recursive) return readdirSync.__native(outer_dir,options);
@@ -216,6 +220,24 @@ function fs_extensions (fs) {
 
     }
     fs.singleton.shim("readdirSync",readdirSync);
+    
+    function readdir(path,options,cb) {
+        if (!options || !options.recursive) return readdir.__native(outer_dir,options,cb);
+
+        //truly a kludge...
+        
+        if (typeof options==='function') {
+            setTimeout(function(path,options,cb){
+                try {
+                    setTimeout(cb,0,null,readdirSync(path,options));
+                } catch (e) {
+                    setTimeout(cb,0,e);
+                }
+            },0,path,options,cb);
+        }
+        
+
+    }
 }
 
 module.exports.Module_extensions = Module_extensions;

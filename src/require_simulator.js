@@ -55,7 +55,6 @@ function requireSimModule() {
 
     require("..");
 
-
     function loadPrevious() {
         try {
             var lib = JSON.parse(fs.readFileSync(__filename+"on"));
@@ -433,10 +432,9 @@ function requireSimModule() {
         return template.join(('function()'+pkg_bare.substring(pkg_bare.indexOf('{')).reindent(4)));
     }
 
-
+}
 
 function template_source(){
-
 function acme(){
     var
     dir,cache={},aliases={},
@@ -487,5 +485,3 @@ return acme;
 }
 
 function packageTemplate(){(function(x){x[0][x[1]]=(function acme_package(){})();})(typeof process+typeof module+typeof require==='objectobjectfunction'?[module,"exports"]:[window,"${acme}"]);}
-
-}

@@ -1,4 +1,4 @@
-/* non-minified concatenated source, built Sat Jan 25 11:24:44 AEDT 2020 from extensions.js */
+/* non-minified concatenated source, built Sat Jan 25 14:50:03 AEDT 2020 from extensions.js */
 /* js-sha1 */
 /*
  * [js-sha1]{@link https://github.com/emn178/js-sha1}
@@ -403,6 +403,7 @@ var inclusionsBegin;
 
 })
 (
+
     function extensions(extend){
         var
         jsClass  = Object.jsClass,
@@ -1756,10 +1757,19 @@ var inclusionsBegin;
             // to javascript source that defines each key as a discrete variables
             // second option argument can be one of "var","let", or "const"
 
-            object("varify",function varify(obj,var_,equals,comma,semi,indents) {
+            object("varify",function varify(obj,var_,equals,comma,semi,indents,debug) {
 
                 var
-                fns = [],
+                
+                fn_id_magic='fn_'+Math.round(Math.random()*Number.MAX_SAFE_INTEGER).toString(36),
+                fn_cleanup_re=new RegExp("(?<=function anonymous\\(.*)(\\n)(?=\\))","sg"),
+                fn_cleanup_re_with ='',
+                fn_cleanup2_re=new RegExp("(function anonymous\\()","sg"),
+                fn_cleanup2_re_with = "function (",
+                fns = {},
+                fn_id=function(){
+                    return fn_id_magic+'.'+Object.keys(fns).length;
+                },
                 quoteIn='*<<',      quoteOut=">>*",
                 deQuoteIn=/"\*<</g, deQuoteOut=/>>\*"/g,
                 //bsEncode='{*-bs-$-bs!*}',bsDecode=/\{\*-bs-\$-bs!\*\}/g,
@@ -1779,9 +1789,14 @@ var inclusionsBegin;
 
                 json_replacer = function(k,v) {
                     if (typeof v ==='function') {
-                        var ix = fns.length;
-                        fns.push(v.toString());
-                        return '{$!func['+ix+']tion!$}';
+                        var 
+                        id = fn_id(),
+                        str =v.toString()
+                                     .replace(fn_cleanup_re,fn_cleanup_re_with)
+                                     .replace(fn_cleanup2_re,fn_cleanup2_re_with) ;
+                        fns[id]= str;
+                        
+                        return unquoted('${'+id+'}');
                     }
 
                     if (typeof v==='object'&& v.constructor===Date) {
@@ -1795,13 +1810,18 @@ var inclusionsBegin;
                     return v;
                 },
                 fixup_object=function(key){
-
+                    if (debug) {
+                        console.log({fixup_object:key});
+                    }
                     var
                     fixed = resolve_unquoted(JSON.stringify_dates(obj[key],json_replacer,indents)),
                     re_replacer = function(re){
                         fixed=fixed.replace(new RegExp (re.source,re.flags),re.repWith);
                     },
                     inject_function = function(fn,ix){
+                        if (debug) {
+                            console.log({inject_function:fn_names[ix],length:fixed.length});
+                        }
                         [
                             { source:"\"\\{\\$!func\\["+ix+"\\]tion!\\$\\}\"",   flags:"s",  repWith:fn },
                             { source:"(?<=function anonymous\\(.*)(\\n)(?=\\))",  flags:"sg", repWith:"" },
@@ -1811,8 +1831,8 @@ var inclusionsBegin;
 
                     html_script_fixups.forEach(re_replacer);
 
-                    fns.forEach(inject_function);
-
+                    //fns.forEach(inject_function);
+                    fixed = fixed.renderWithObject(fns);
                     return key + equals + fixed;
 
                 };
@@ -5649,7 +5669,6 @@ var inclusionsBegin;
 
 
     },
-
 
     /*isNode=*/
     (
