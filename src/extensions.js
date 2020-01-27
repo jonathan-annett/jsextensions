@@ -1386,7 +1386,7 @@ var inclusionsBegin;
             object("varify",function varify(obj,var_,equals,comma,semi,indents,debug) {
 
                 var
-                
+
                 fn_id_magic='fn_'+Math.round(Math.random()*Number.MAX_SAFE_INTEGER).toString(36),
                 fn_cleanup_re=new RegExp("(?<=function anonymous\\(.*)(\\n)(?=\\))","sg"),
                 fn_cleanup_re_with ='',
@@ -1415,13 +1415,14 @@ var inclusionsBegin;
 
                 json_replacer = function(k,v) {
                     if (typeof v ==='function') {
-                        var 
+                        var
                         id = fn_id(),
+                        header = v.name==='anonymous' ? fn_cleanup2_re_with : 'function '+v.name+'(',
                         str =v.toString()
                                      .replace(fn_cleanup_re,fn_cleanup_re_with)
-                                     .replace(fn_cleanup2_re,fn_cleanup2_re_with) ;
+                                     .replace(fn_cleanup2_re,header) ;
                         fns[id]= str;
-                        
+
                         return unquoted('${'+id+'}');
                     }
 
