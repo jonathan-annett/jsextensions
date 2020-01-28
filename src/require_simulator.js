@@ -66,6 +66,11 @@ function requireSimModule() {
     fs_jszip_js     = minifyJS(fs_jszip_js);
     fs.writeFileSync("./fs_jszip.min.js",fs_jszip_js);
 
+    var fs_jszip_browser_js = fs.readFileSync("./fs_jszip-browser.js","utf8");
+    fs_jszip_browser_js     = makePackage("startFSJSZip",fs_jszip_browser_js);
+    fs.writeFileSync("./fs_jszip-browser.pkg.js",fs_jszip_browser_js);
+    fs_jszip_browser_js     = minifyJS(fs_jszip_browser_js);
+    fs.writeFileSync("./fs_jszip-browser.min.js",fs_jszip_browser_js);
 
     require("..");
 
