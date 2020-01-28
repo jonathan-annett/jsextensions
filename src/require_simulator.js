@@ -54,24 +54,6 @@ function requireSimModule() {
         vm = require('vm');
 
 
-    var js_zipWrap_js = fs.readFileSync("./js_zipWrap.js","utf8");
-    js_zipWrap_js = makePackage("zipWrap",js_zipWrap_js);
-    fs.writeFileSync("./js_zipWrap.pkg.js",js_zipWrap_js);
-    js_zipWrap_js = minifyJS(js_zipWrap_js);
-    fs.writeFileSync("./js_zipWrap.min.js",js_zipWrap_js);
-
-    var fs_jszip_js = fs.readFileSync("./fs_jszip.js","utf8");
-    fs_jszip_js      = makePackage("fsJSZip",fs_jszip_js);
-    fs.writeFileSync("./fs_jszip.pkg.js",fs_jszip_js);
-    fs_jszip_js     = minifyJS(fs_jszip_js);
-    fs.writeFileSync("./fs_jszip.min.js",fs_jszip_js);
-
-    var fs_jszip_browser_js = fs.readFileSync("./fs_jszip-browser.js","utf8");
-    fs_jszip_browser_js     = makePackage("startFSJSZip",fs_jszip_browser_js);
-    fs.writeFileSync("./fs_jszip-browser.pkg.js",fs_jszip_browser_js);
-    fs_jszip_browser_js     = minifyJS(fs_jszip_browser_js);
-    fs.writeFileSync("./fs_jszip-browser.min.js",fs_jszip_browser_js);
-
     require("..");
 
     function loadPrevious() {
