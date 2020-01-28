@@ -102,19 +102,6 @@ function fs_JSZip (exports,data,zipWrap,JSZip,nodePath,cb) {
             },
 
 
-            Stats = function Stats(size, when,inode) {
-              this.ino=inode;
-              this.size = size;
-              this.atimeMs = when.getTime();
-              this.mtimeMs = this.atimeMs;
-              this.ctimeMs = this.atimeMs;
-              this.birthtimeMs = this.atimeMs;
-              this.atime = when;
-              this.mtime = this.atime;
-              this.ctime = this.atime;
-              this.birthtime = this.atime;
-            },
-
             fs_process = {
                 cwd : function getCwd(path) {
                     return cwd;
@@ -194,9 +181,6 @@ function fs_JSZip (exports,data,zipWrap,JSZip,nodePath,cb) {
                  UV_FS_COPYFILE_FICLONE_FORCE: 4,
                  COPYFILE_FICLONE_FORCE: 4
             },
-
-
-
 
             getOptionsWithEncodingCallback = function getOptionsWithEncodingCallback(options,callback) {
                 function throwOpts(){
@@ -301,9 +285,6 @@ function fs_JSZip (exports,data,zipWrap,JSZip,nodePath,cb) {
                 promiser.name=requester.name;
                 return promiser;
             },
-
-
-
             getFlagsWithCallback = function getFlagsWithCallback(flags,callback) {
                 function throwOpts(){
                     return new Error ( 'The "flags" argument must be number. Received type '+typeof options);
@@ -349,7 +330,6 @@ function fs_JSZip (exports,data,zipWrap,JSZip,nodePath,cb) {
                 promiser.name=requester.name;
                 return promiser;
             },
-
             getPromiserForRename = function getPromiserForRename (requester) {
                 var promiser = function (oldName,newName) {
                     return new Promise(function(resolve,reject){
@@ -362,8 +342,6 @@ function fs_JSZip (exports,data,zipWrap,JSZip,nodePath,cb) {
                 promiser.name=requester.name;
                 return promiser;
             },
-
-
             getPromiserForCallback =function getPromiserForCallback (requester) {
                 var promiser = function (path) {
                     return new Promise(function(resolve,reject){
@@ -1884,7 +1862,7 @@ function zipWrap(zip,nodePath,cb){
                            directory[true_path]=zip_fn;
                            zip_fns.push(zip_fn);
                            listing.push(true_path);
-                           watch_message=["rename","change"];
+                           watch_messages=["rename","change"];
                        }
 
                        zip.file(zip_fn,data,opts);
@@ -1898,7 +1876,7 @@ function zipWrap(zip,nodePath,cb){
                            if(watchers[watch_path]){
                               watch_messages.forEach(function(watch_message){
                                   watchers[watch_path].forEach(
-                                      function(fn){fn(watch_message,fn.encode(basename),new Stats(data.length, obj.date,inode));}
+                                      function(fn){fn(watch_message,fn.encode(basename),new wrapped.Stats(data.length, obj.date,inode));}
                                   );
                               });
                            }
@@ -2356,7 +2334,8 @@ function zipWrap(zip,nodePath,cb){
         }
 
 
-        function Stats(size, when) {
+        function Stats(size, when,inode) {
+          this.ino=inode;
           this.size = size;
           this.atimeMs = when.getTime();
           this.mtimeMs = this.atimeMs;
@@ -2704,6 +2683,7 @@ function zipWrap(zip,nodePath,cb){
             double_dot_parent_re         : {value : double_dot_parent_re},
             true_path_from_path          : {value : true_path_from_path},
             true_path_from_relative_path : {value : true_path_from_relative_path},
+            Stats                        : {value : Stats},
         });
 
     }
