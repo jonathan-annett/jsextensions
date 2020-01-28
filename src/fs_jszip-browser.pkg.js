@@ -12,7 +12,7 @@
                 if (err) return cb(err);
     
                 window.fsJSZip(
-                    exports,
+                    self,
                     data,
                     window.zipWrap,
                     window.JSZip,

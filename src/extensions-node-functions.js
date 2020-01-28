@@ -102,25 +102,30 @@ module.exports = function(WS_PATH,ws_static_path,WS_PORT,cpArgs,ext_path) {
             ext_url      = ws_static_path+'extensions.js',
             pf_min_url   = ws_static_path+"polyfills.min.js",
             ext_min_url  = ws_static_path+'extensions.min.js',
+            ext_alt_url  = ws_static_path+'jsextensions.js',
             pf_min_path  = node.path.join(node.path.dirname(pf_path),"polyfills.min.js"),
-            ext_min_path = node.path.join(node.path.dirname(ext_path),"extensions.min.js");
+            ext_min_path = node.path.join(node.path.dirname(ext_path),"extensions.min.js"),
+            ext_alt_path = node.path.join(node.path.dirname(ext_path),"jsextensions.js");
 
             statics[pf_path]      = pf_url;
             statics[ext_path]     = ext_url;
             statics[pf_min_path]  = pf_min_url;
             statics[ext_min_path] = ext_min_url;
+            statics[ext_alt_path] = ext_alt_url;
 
             if (main_app) {
                 main_app.use (pf_url,      node.express.static(pf_path) );
                 main_app.use (ext_url,     node.express.static(ext_path) );
                 main_app.use (pf_min_url,  node.express.static(pf_min_path) );
                 main_app.use (ext_min_url, node.express.static(ext_min_path) );
+                main_app.use (ext_alt_url, node.express.static(ext_alt_path) );
             }
 
             app.use(pf_url,node.express.static(pf_path));
             app.use(ext_url,node.express.static(ext_path));
             app.use (pf_min_url,  node.express.static(pf_min_path) );
             app.use (ext_min_url, node.express.static(ext_min_path) );
+            app.use (ext_alt_url, node.express.static(ext_alt_path) );
 
             console.log("jspolyfills,jsextensions loaded. available from",Object.values(statics));
 
@@ -189,10 +194,10 @@ function Module_extensions(mod) {
 
 function fs_extensions (fs) {
     var path = require("path");// used by readdirSync
-    
-    
-    
-    
+
+
+
+
     /*with readdirSync honors 'recursive:true' option*/
     function readdirSync(outer_dir,options) {
         if (!options || !options.recursive) return readdirSync.__native(outer_dir,options);
@@ -220,12 +225,12 @@ function fs_extensions (fs) {
 
     }
     fs.singleton.shim("readdirSync",readdirSync);
-    
+
     function readdir(path,options,cb) {
         if (!options || !options.recursive) return readdir.__native(outer_dir,options,cb);
 
         //truly a kludge...
-        
+
         if (typeof options==='function') {
             setTimeout(function(path,options,cb){
                 try {
@@ -235,7 +240,7 @@ function fs_extensions (fs) {
                 }
             },0,path,options,cb);
         }
-        
+
 
     }
 }
