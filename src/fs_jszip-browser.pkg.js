@@ -16,7 +16,7 @@
                     data,
                     window.zipWrap,
                     window.JSZip,
-                    window.path,
+                    window.simRequire.path,
                     function(mod){
                         self.fs=mod.fs;
                         self.process=mod.process;

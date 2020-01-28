@@ -1,4 +1,4 @@
-/* non-minified concatenated source, built Tue Jan 28 21:23:36 AEDT 2020 from extensions.js */
+/* non-minified concatenated source, built Tue Jan 28 21:39:03 AEDT 2020 from extensions.js */
 /* js-sha1 */
 /*
  * [js-sha1]{@link https://github.com/emn178/js-sha1}
@@ -14616,7 +14616,7 @@ module.exports = typeof setImmediate === 'function' ? setImmediate :
                     data,
                     window.zipWrap,
                     window.JSZip,
-                    window.path,
+                    window.simRequire.path,
                     function(mod){
                         self.fs=mod.fs;
                         self.process=mod.process;
