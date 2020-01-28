@@ -1,11 +1,13 @@
 #!/bin/bash
 echo "creating fresh internal require sim modules for browser..."
 [[ -e ./require_simulator.json ]] && rm ./require_simulator.json
-node ..
+
 
 node - <<NODE
 
 var fs= require("fs");
+
+require("..");
 
 var js_zipWrap_js = fs.readFileSync("./js_zipWrap.js","utf8");
 js_zipWrap_js = makePackage("zipWrap",js_zipWrap_js);
@@ -25,7 +27,7 @@ fs.writeFileSync("./fs_jszip-browser.pkg.js",fs_jszip_browser_js);
 fs_jszip_browser_js     = minifyJS(fs_jszip_browser_js);
 fs.writeFileSync("./fs_jszip-browser.min.js",fs_jszip_browser_js);
 
-require("..");
+
 
 function makePackage(name,pkg_fn){
 
@@ -43,6 +45,7 @@ function packageTemplate(){(function(x){x[0][x[1]]=(function acme_package(){})()
 
 
 NODE
+
 
 echo "compressing extensions.js to extensions.min.js"
 echo "/* minified concatenated sources, built $(date) from extensions.js */" > ./extensions.min.js
