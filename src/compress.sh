@@ -14,7 +14,7 @@ cat ../node_modules/jszip/dist/jszip.min.js >> ./extensions.min.js
 echo "/* js_zipWrap.min.js */" >> ./extensions.min.js
 cat ./js_zipWrap.min.js >> ./extensions.min.js
 echo "/* fs_jszip.min.js */" >> ./extensions.min.js
-cat ./fs_jszip.min.js >> ../extensions.min.js
+cat ./fs_jszip.min.js >> ./extensions.min.js
 echo "/* fs_jszip-browser.min.js */" >> ./extensions.min.js
 cat ./fs_jszip-browser.min.js >> ./extensions.min.js
 echo "/* extensions.js */" >> ./extensions.min.js
@@ -27,6 +27,17 @@ echo "/* jshint ignore:end */" >> ./extensions.min.js
 echo "/* non-minified concatenated source, built $(date) from extensions.js */" > ./jsextensions.js
 echo "/* js-sha1 */" >> ./jsextensions.js
 cat ../node_modules/js-sha1/src/sha1.js >> ./jsextensions.js
+
+echo "/* jszip-utils.js */" >> ./jsextensions.js
+cat ../node_modules/jszip-utils/dist/jszip-utils.js  >> ./jsextensions.js
+echo "/* jszip.js */" >> ./jsextensions.js
+cat ../node_modules/jszip/dist/jszip.js >> ./jsextensions.js
+echo "/* js_zipWrap.pkg.js */" >> ./jsextensions.js
+cat ./js_zipWrap.pkg.js >> ./jsextensions.js
+echo "/* fs_jszip.pkg.js */" >> ./jsextensions.js
+cat ./fs_jszip.pkg.js >> ./jsextensions.js
+echo "/* fs_jszip-browser.pkg.js */" >> ./jsextensions.js
+cat ./fs_jszip-browser.pkg.js >> ./jsextensions.js
 echo "/* extensions.js */" >> ./jsextensions.js
 cat extensions.js >> ./jsextensions.js
 echo "/* internalRequire files */" >> ./jsextensions.js
@@ -36,11 +47,19 @@ cd ..
 if [[ "$1" == "push" ]]; then
 
     git add \
-        src/extensions.js src/extensions.min.js \
+        src/extensions.js \
+        src/extensions.min.js \
         src/jsextensions.js \
+        src/js_zipWrap.pkg.js \
+        src/js_zipWrap.min.js \
+        src/fs_jszip.pkg.js \
+        src/fs_jszip.min.js \
+        src/fs_jszip-browser.pkg.js \
+        src/fs_jszip-browser.min.js \
         src/extensions-node-functions.js \
         src/compress.sh \
-        src/require_simulator.js src/require_simulator.json
+        src/require_simulator.js \
+        src/require_simulator.json
 
     ./update_git_repos.sh push || (git commit -m "auto update"; git push)
     echo -n current commit hash :
