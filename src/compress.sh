@@ -5,7 +5,28 @@ echo "creating fresh internal require sim modules for browser..."
 
 node - <<NODE
 
-var fs= require("fs");
+var path = require("path"),
+fs =require("fs"),
+UglifyJS     = require("uglify-js"),
+babel = require("babel-core"),
+minifyJS = function minifyJS( js_src ) {
+   var result= UglifyJS.minify(js_src, {
+       parse: {},
+       compress: {},
+       mangle: false,
+       output: {
+           code: true
+       }
+   });
+   if (result.code) return result.code;
+
+   result = babel.transform(js_src,{minified:true});
+
+
+  return result.code;
+},
+vm = require('vm');
+
 
 require("..");
 
