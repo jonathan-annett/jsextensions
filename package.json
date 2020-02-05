@@ -9,6 +9,7 @@
     "license": "MIT",
     "dependencies": {
         "babel-core": "^6.26.3",
+        "browser-fs": "github:jonathan-annett/browser-fs#181450ee43edf8a278f385b8281f195d03b98423",
         "browser-path": "npm:path@^0.12.7",
         "browser-punycode": "npm:punycode@^2.1.1",
         "browser-querystring": "npm:querystring@^0.2.0",
