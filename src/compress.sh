@@ -10,20 +10,6 @@ echo "/* jshint ignore:start */" > ./extensions.min.js
 echo "/* js-sha1 */" >> ./extensions.min.js
 cat ../node_modules/js-sha1/build/sha1.min.js >> ./extensions.min.js
 
-echo "/* browser-fs.min.js */" >> ./extensions.min.js
-cat ../node_modules/browser-fs/browser-fs.min.js  >> ./extensions.min.js
-
-
-#echo "/* jszip-utils.min.js */" >> ./extensions.min.js
-#cat ../node_modules/jszip-utils/dist/jszip-utils.min.js  >> ./extensions.min.js
-#echo "/* jszip.min.js */" >> ./extensions.min.js
-#cat ../node_modules/jszip/dist/jszip.min.js >> ./extensions.min.js
-#echo "/* js_zipWrap.min.js */" >> ./extensions.min.js
-#cat ./js_zipWrap.min.js >> ./extensions.min.js
-#echo "/* fs_jszip.min.js */" >> ./extensions.min.js
-#cat ./fs_jszip.min.js >> ./extensions.min.js
-#echo "/* fs_jszip-browser.min.js */" >> ./extensions.min.js
-#cat ./fs_jszip-browser.min.js >> ./extensions.min.js
 echo "/* extensions.js */" >> ./extensions.min.js
 
 uglifyjs extensions.js -c >> ./extensions.min.js
@@ -31,29 +17,23 @@ echo "/* (ex) ./require_simulator.json */" >> ./extensions.min.js
 node -e 'console.log(JSON.parse(require("fs").readFileSync("./require_simulator.json","utf-8")).pkg.min_src);' >> ./extensions.min.js
 echo "/* jshint ignore:end */" >> ./extensions.min.js
 
+#echo "/* browser-fs.min.js */" >> ./extensions.min.js
+#cat ../node_modules/browser-fs/browser-fs.min.js  >> ./extensions.min.js
+
 echo "/* non-minified concatenated source, built $(date) from extensions.js */" > ./jsextensions.js
 echo "/* js-sha1 */" >> ./jsextensions.js
 cat ../node_modules/js-sha1/src/sha1.js >> ./jsextensions.js
 
 
-echo "/* browser-fs.pkg.js */" >> ./jsextensions.js
-cat ../node_modules/browser-fs/browser-fs.pkg.js  >> ./jsextensions.js
 
-
-#echo "/* jszip-utils.js */" >> ./jsextensions.js
-#cat ../node_modules/jszip-utils/dist/jszip-utils.js  >> ./jsextensions.js
-#echo "/* jszip.js */" >> ./jsextensions.js
-#cat ../node_modules/jszip/dist/jszip.js >> ./jsextensions.js
-#echo "/* js_zipWrap.pkg.js */" >> ./jsextensions.js
-#cat ./js_zipWrap.pkg.js >> ./jsextensions.js
-#echo "/* fs_jszip.pkg.js */" >> ./jsextensions.js
-#cat ./fs_jszip.pkg.js >> ./jsextensions.js
-#echo "/* fs_jszip-browser.pkg.js */" >> ./jsextensions.js
-#cat ./fs_jszip-browser.pkg.js >> ./jsextensions.js
 echo "/* extensions.js */" >> ./jsextensions.js
 cat extensions.js >> ./jsextensions.js
 echo "/* internalRequire files */" >> ./jsextensions.js
 node -e 'console.log(JSON.parse(require("fs").readFileSync("./require_simulator.json","utf-8")).pkg.src);' >> ./jsextensions.js
+
+#echo "/* browser-fs.pkg.js */" >> ./jsextensions.js
+#cat ../node_modules/browser-fs/browser-fs.pkg.js  >> ./jsextensions.js
+
 
 cd ..
 if [[ "$1" == "push" ]]; then
