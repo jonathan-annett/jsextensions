@@ -1,4 +1,4 @@
-/* non-minified concatenated source, built Tue Feb 11 16:33:26 AEDT 2020 from extensions.js */
+/* non-minified concatenated source, built Tue Feb 11 16:39:48 AEDT 2020 from extensions.js */
 /* js-sha1 */
 /*
  * [js-sha1]{@link https://github.com/emn178/js-sha1}
@@ -3339,16 +3339,14 @@ var inclusionsBegin;
                               h = "<script>\n"+ Object.varify(h)+"</script>";
                               break;
                           case (h.search(/^(\/[a-z]|[A-Z]|[0-9])*.*\.js/) ===0) &&
-                               (h.search(/\s/)===-1) && ["head","body"].indexOf(where)>=0 :
+                               (h.search(/\s/)===-1) && ["</head>","</body>"].indexOf(where)>=0 :
 
                                h = '<script src="'+h+'"></script>';
                                break;
 
                           case (h.search(/^(\/[a-z]|[A-Z]|[0-9])*.*\.css/) ===0) &&
-                               (h.search(/\s/)===-1) :
-
-                            where = '</head>';// force css to be in head.
-                            h = '<link href="'+h+'" rel="stylesheet"\\>';
+                               (h.search(/\s/)===-1) && ["</head>"].indexOf(where)>=0 :
+                              h = '<link href="'+h+'" rel="stylesheet"\\>';
 
                           break;
                       }
