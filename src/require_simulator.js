@@ -58,6 +58,7 @@ function requireSimModule() {
     function loadPrevious() {
         try {
             var lib = JSON.parse(fs.readFileSync(__filename+"on"));
+            if (process.argv.indexOf('--reread-lib')<0) return lib;
             return Object.keys(lib.files).some(function(file) {
                 var sha1=fs.readFileSync(file,"utf-8").sha1;
                 if (typeof sha1!=='string') return true;

@@ -1,4 +1,4 @@
-/* non-minified concatenated source, built Sat Feb 15 00:19:26 AEDT 2020 from extensions.js */
+/* non-minified concatenated source, built Sat Feb 15 07:13:03 AEDT 2020 from extensions.js */
 /* js-sha1 */
 /*
  * [js-sha1]{@link https://github.com/emn178/js-sha1}
@@ -1818,21 +1818,10 @@ var inclusionsBegin;
                     fixed = resolve_unquoted(JSON.stringify_dates(obj[key],json_replacer,indents)),
                     re_replacer = function(re){
                         fixed=fixed.replace(new RegExp (re.source,re.flags),re.repWith);
-                    },
-                    inject_function = function(fn,ix){
-                        if (debug) {
-                            console.log({inject_function:fn_names[ix],length:fixed.length});
-                        }
-                        [
-                            { source:"\"\\{\\$!func\\["+ix+"\\]tion!\\$\\}\"",   flags:"s",  repWith:fn },
-                            { source:"(?<=function anonymous\\(.*)(\\n)(?=\\))",  flags:"sg", repWith:"" },
-                            { source:"(function anonymous\\()",                  flags:"sg", repWith:"function (" }
-                        ].forEach(re_replacer);
                     };
 
                     html_script_fixups.forEach(re_replacer);
 
-                    //fns.forEach(inject_function);
                     fixed = fixed.renderWithObject(fns);
                     return key + equals + fixed;
 

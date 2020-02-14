@@ -226,7 +226,7 @@ function fs_extensions (fs) {
     }
     fs.singleton.shim("readdirSync",readdirSync);
 
-    function readdir(path,options,cb) {
+    /*function readdir(path,options,cb) {
         if (!options || !options.recursive) return readdir.__native(outer_dir,options,cb);
 
         //truly a kludge...
@@ -242,7 +242,7 @@ function fs_extensions (fs) {
         }
 
 
-    }
+    } */
 }
 
 module.exports.Module_extensions = Module_extensions;
