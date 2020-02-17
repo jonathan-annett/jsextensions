@@ -95,7 +95,6 @@ module.exports = function(WS_PATH,ws_static_path,WS_PORT,cpArgs,ext_path) {
         // once loaded, they autoload over the WS PORT.
         // (otherwise the outer html needs to know the port number, which breaks the concept)
         load ("jspolyfills","http:","somehost",function(got_src){
-            console.log({got_src:got_src});
             var
             pf_path      = Object.keys(statics)[0],
             pf_url       = ws_static_path+"polyfills.js",
@@ -126,8 +125,6 @@ module.exports = function(WS_PATH,ws_static_path,WS_PORT,cpArgs,ext_path) {
             app.use (pf_min_url,  node.express.static(pf_min_path) );
             app.use (ext_min_url, node.express.static(ext_min_path) );
             app.use (ext_alt_url, node.express.static(ext_alt_path) );
-
-            console.log("jspolyfills,jsextensions loaded. available from",Object.values(statics));
 
             app.ws(WS_PATH, function(ws, req) {
 
